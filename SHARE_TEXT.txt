@@ -1,0 +1,15 @@
+SpoofTrap 2026.03.10.3
+
+Included:
+- SpoofTrap.app
+- SpoofTrap.command
+- bundled spoofdpi: bundled
+
+First run on another Mac:
+1. Unzip
+2. Move SpoofTrap to /Applications
+3. Right-click SpoofTrap.app > Open
+4. Press G in SpoofTrap if you need system proxy mode for browsers
+
+If Roblox shows the HTTP/join warning after opening, retry joining the game a few times before resetting the bypass.
+If the console shows repeated "request blocked" warnings but Roblox still works, those warnings are usually safe to ignore.
