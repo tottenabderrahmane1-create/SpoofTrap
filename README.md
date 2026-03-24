@@ -37,7 +37,7 @@ DMG is the easiest install. PKG and ZIP stay available if you need a different f
 - macOS launcher for restrictive networks
 - local bypass flow with a simpler launch workspace
 - faster retries when the normal Roblox launch path fails
-- Windows version is planned and tracked publicly
+- Windows version is planned and tracked publicly, with the next estimate update planned for Sunday, March 29, 2026
 
 ## Updates
 
@@ -50,7 +50,7 @@ DMG is the easiest install. PKG and ZIP stay available if you need a different f
 
 - This public repository is release-focused and does not include the private application source.
 - macOS builds are available through the release files in `dist/` and on the website.
-- Windows support is still in progress.
+- Windows support is still in progress. The next public estimate update is planned for Sunday, March 29, 2026.
 
 ## Disclaimer
 
