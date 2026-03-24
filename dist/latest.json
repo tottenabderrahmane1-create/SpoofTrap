@@ -1,0 +1,21 @@
+{
+  "name": "SpoofTrap",
+  "version": "2026.03.10.5",
+  "bundleIdentifier": "com.spooftrap.app",
+  "generatedAt": "2026-03-16T14:00:57Z",
+  "bundledSpoofdpi": "bundled",
+  "artifacts": {
+    "zip": {
+      "file": "SpoofTrap-macOS-2026.03.10.5.zip",
+      "sha256": "9858b86e5f7eaf6309986413e107ebf2cf8162cec3d5a69809eab62b1e9c94f2"
+    },
+    "pkg": {
+      "file": "SpoofTrap-macOS-2026.03.10.5.pkg",
+      "sha256": "1159e8a426f5fa4c5a5f8ec587ef904c7b958f919f62968bdea73a5ba082eb17"
+    },
+    "dmg": {
+      "file": "SpoofTrap-macOS-2026.03.10.5.dmg",
+      "sha256": "db7d5ab44832aa2358c946adb57ca69071dc9a8da687c8a9a1417c1868325778"
+    }
+  }
+}

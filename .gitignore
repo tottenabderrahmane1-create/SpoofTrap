@@ -1,0 +1,11 @@
+.DS_Store
+.build/
+output/
+
+.spooftrap-apps
+.spooftrap-current-profile
+
+profiles/*.conf
+
+dist/build/
+dist/SpoofTrap/
