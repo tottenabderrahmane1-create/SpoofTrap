@@ -1,15 +1,15 @@
 const macosFallbackRelease = {
-  version: "2026.03.10.5",
-  generatedAt: "2026-03-16T14:00:57Z",
+  version: "2026.03.29.1",
+  generatedAt: "2026-03-29T16:47:05Z",
   artifacts: {
     pkg: {
-      file: "SpoofTrap-macOS-2026.03.10.5.pkg",
+      file: "SpoofTrap-macOS-2026.03.29.1.pkg",
     },
     zip: {
-      file: "SpoofTrap-macOS-2026.03.10.5.zip",
+      file: "SpoofTrap-macOS-2026.03.29.1.zip",
     },
     dmg: {
-      file: "SpoofTrap-macOS-2026.03.10.5.dmg",
+      file: "SpoofTrap-macOS-2026.03.29.1.dmg",
     },
   },
 };
