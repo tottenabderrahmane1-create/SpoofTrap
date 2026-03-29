@@ -9,3 +9,5 @@ profiles/*.conf
 
 dist/build/
 dist/SpoofTrap/
+
+.secrets/
