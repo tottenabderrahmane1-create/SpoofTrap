@@ -3,15 +3,15 @@
   "releaseDate": "2026-03-31",
   "downloads": {
     "zip": {
-      "url": "https://github.com/28atotten/SpoofTrapMain/releases/download/v2026.03.31.1/SpoofTrap.zip",
+      "url": "https://raw.githubusercontent.com/spooftrap-app/SpoofTrap-site/main/dist/SpoofTrap.zip",
       "sha256": "8951d28f0e1888de8206285582cfc212308fc6b7091dd8d6d56c563cd33262ac"
     },
     "pkg": {
-      "url": "https://github.com/28atotten/SpoofTrapMain/releases/download/v2026.03.31.1/SpoofTrap.pkg",
+      "url": "https://raw.githubusercontent.com/spooftrap-app/SpoofTrap-site/main/dist/SpoofTrap.pkg",
       "sha256": "c4cbdbea1579167f631d743ddb5ac2756c393f349de63482e042a755006d3df8"
     },
     "dmg": {
-      "url": "https://github.com/28atotten/SpoofTrapMain/releases/download/v2026.03.31.1/SpoofTrap.dmg",
+      "url": "https://raw.githubusercontent.com/spooftrap-app/SpoofTrap-site/main/dist/SpoofTrap.dmg",
       "sha256": "d49c437d7f7be849e37b4528a9b8384d8661f57175c955c321b25f6c2782a358"
     }
   },
