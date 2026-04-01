@@ -363,7 +363,20 @@ struct ContentView: View {
         glassCard {
             VStack(alignment: .leading, spacing: 16) {
                 HStack {
-                    sectionTitle("FastFlags")
+                    HStack(spacing: 8) {
+                        sectionTitle("FastFlags")
+                        if viewModel.fastFlagsManager.isEnabled {
+                            Text("ON")
+                                .font(.system(size: 9, weight: .bold, design: .rounded))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(
+                                    Capsule()
+                                        .fill(Color.green)
+                                )
+                        }
+                    }
                     Spacer()
                     Button {
                         withAnimation(.easeInOut(duration: 0.2)) {
@@ -1057,11 +1070,12 @@ extension ContentView {
                     )
                     .padding(.horizontal, 10)
                     .padding(.vertical, 7)
+                    .frame(maxWidth: .infinity)
                     .background(
-                        isSelected && !isLocked ?
                         RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(Color.white) : nil
+                            .fill(isSelected && !isLocked ? Color.white : Color.clear)
                     )
+                    .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .disabled(viewModel.isRunning || isLocked)
@@ -1087,11 +1101,12 @@ extension ContentView {
                         .foregroundStyle(isSelected ? .black.opacity(0.85) : .white.opacity(0.6))
                         .padding(.horizontal, 14)
                         .padding(.vertical, 7)
+                        .frame(maxWidth: .infinity)
                         .background(
-                            isSelected ?
                             RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                .fill(Color.white) : nil
+                                .fill(isSelected ? Color.white : Color.clear)
                         )
+                        .contentShape(Rectangle())
                 }
                 .buttonStyle(.plain)
                 .disabled(viewModel.isRunning)
