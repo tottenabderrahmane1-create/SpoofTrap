@@ -14,7 +14,8 @@ let package = Package(
             name: "SpoofTrap",
             path: "Sources",
             resources: [
-                .copy("Resources/spooftrap-icon.png")
+                .copy("Resources/spooftrap-icon.png"),
+                .copy("Resources/bin")
             ]
         )
     ]

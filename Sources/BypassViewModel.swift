@@ -45,7 +45,7 @@ final class BypassViewModel: ObservableObject {
         var title: String {
             switch self {
             case .app:
-                return "App (Legacy)"
+                return "App"
             case .system:
                 return "System"
             }
@@ -54,9 +54,9 @@ final class BypassViewModel: ObservableObject {
         var description: String {
             switch self {
             case .app:
-                return "May not work with Roblox"
-            case .system:
                 return "Recommended for Roblox"
+            case .system:
+                return "Sets system-wide proxy"
             }
         }
     }

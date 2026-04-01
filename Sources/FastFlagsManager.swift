@@ -42,7 +42,11 @@ enum FastFlagPreset: String, CaseIterable, Identifiable {
 final class FastFlagsManager: ObservableObject {
     @Published var flags: [FastFlag] = []
     @Published var selectedPreset: FastFlagPreset = .none
-    @Published var isEnabled: Bool = false
+    @Published var isEnabled: Bool = false {
+        didSet {
+            saveSettings()
+        }
+    }
     
     private let fileManager = FileManager.default
     
