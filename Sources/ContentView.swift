@@ -72,13 +72,15 @@ struct ContentView: View {
                 settingsCard
                 fastFlagsCard
                 
+                // FastFlags detail is available for all users
+                if showingFastFlags {
+                    fastFlagsDetailCard
+                }
+                
+                // Pro-only features
                 if viewModel.proManager.isPro {
                     if showingAdvanced {
                         advancedCard
-                    }
-                    
-                    if showingFastFlags {
-                        fastFlagsDetailCard
                     }
                     
                     if showingStats {
@@ -262,15 +264,7 @@ struct ContentView: View {
                         .font(.system(size: 10, weight: .medium, design: .rounded))
                         .foregroundStyle(viewModel.proxyScope == .system ? .green.opacity(0.7) : .orange.opacity(0.7))
                 }
-            }
-        }
-    }
-
-    private var advancedCard: some View {
-        glassCard {
-            VStack(alignment: .leading, spacing: 16) {
-                sectionTitle("Advanced")
-
+                
                 VStack(alignment: .leading, spacing: 6) {
                     settingRow(label: "spoofdpi") {
                         HStack(spacing: 8) {
@@ -298,6 +292,41 @@ struct ContentView: View {
                         .foregroundStyle(.white.opacity(0.4))
                         .lineLimit(1)
                         .truncationMode(.middle)
+                }
+            }
+        }
+    }
+
+    private var advancedCard: some View {
+        glassCard {
+            VStack(alignment: .leading, spacing: 16) {
+                sectionTitle("Advanced")
+                
+                settingRow(label: "Chunk Size") {
+                    HStack(spacing: 6) {
+                        Text("\(viewModel.httpsChunkSize)")
+                            .font(.system(size: 13, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.white)
+                            .frame(width: 20)
+                        Stepper("", value: Binding(
+                            get: { viewModel.httpsChunkSize },
+                            set: { viewModel.setChunkSize($0) }
+                        ), in: 1...16)
+                        .labelsHidden()
+                        .disabled(viewModel.isRunning)
+                    }
+                }
+                
+                settingRow(label: "Disorder") {
+                    Toggle("", isOn: Binding(
+                        get: { viewModel.httpsDisorder },
+                        set: { viewModel.setHTTPSDisorder($0) }
+                    ))
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
+                    .tint(.cyan)
+                    .disabled(viewModel.isRunning)
                 }
 
                 settingRow(label: "Hybrid Relaunch") {
@@ -330,30 +359,20 @@ struct ContentView: View {
                 HStack {
                     sectionTitle("FastFlags")
                     Spacer()
-                    if viewModel.proManager.isPro {
-                        Button {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                showingFastFlags.toggle()
-                            }
-                        } label: {
-                            HStack(spacing: 4) {
-                                Image(systemName: "flag.fill")
-                                    .font(.system(size: 10))
-                                Text(showingFastFlags ? "Hide" : "Edit")
-                            }
-                            .font(.system(size: 12, weight: .semibold, design: .rounded))
-                            .foregroundStyle(.cyan.opacity(0.8))
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            showingFastFlags.toggle()
                         }
-                        .buttonStyle(.plain)
-                    } else {
+                    } label: {
                         HStack(spacing: 4) {
-                            Image(systemName: "lock.fill")
-                                .font(.system(size: 9))
-                            Text("Pro")
+                            Image(systemName: "flag.fill")
+                                .font(.system(size: 10))
+                            Text(showingFastFlags ? "Hide" : "Edit")
                         }
-                        .font(.system(size: 11, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.yellow.opacity(0.7))
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.cyan.opacity(0.8))
                     }
+                    .buttonStyle(.plain)
                 }
 
                 settingRow(label: "Enable FastFlags") {
@@ -361,6 +380,7 @@ struct ContentView: View {
                         .labelsHidden()
                         .toggleStyle(.switch)
                         .controlSize(.small)
+                        .tint(.green)
                         .disabled(viewModel.isRunning)
                 }
 
@@ -769,31 +789,13 @@ struct ContentView: View {
                     statusPill
                 }
 
-                Button(action: viewModel.toggleBypass) {
-                    VStack(spacing: 4) {
-                        Text(viewModel.isRunning ? "Stop Session" : "Start Session")
-                            .font(.system(size: 20, weight: .bold, design: .rounded))
-
-                        Text(viewModel.isRunning ? "Terminate proxy" : "Launch Roblox")
-                            .font(.system(size: 12, weight: .medium, design: .rounded))
-                    }
-                    .foregroundStyle(Color.black.opacity(0.85))
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 72)
-                    .background(
-                        RoundedRectangle(cornerRadius: 20, style: .continuous)
-                            .fill(
-                                LinearGradient(
-                                    colors: [.white.opacity(0.98), actionTint],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
-                            )
-                            .shadow(color: actionTint.opacity(pulse ? 0.4 : 0.2), radius: pulse ? 20 : 10)
-                    )
-                }
-                .buttonStyle(.plain)
-                .disabled((!viewModel.binaryAvailable || !viewModel.robloxInstalled) && !viewModel.isRunning)
+                MainActionButton(
+                    isRunning: viewModel.isRunning,
+                    pulse: pulse,
+                    actionTint: actionTint,
+                    isDisabled: (!viewModel.binaryAvailable || !viewModel.robloxInstalled) && !viewModel.isRunning,
+                    action: viewModel.toggleBypass
+                )
 
                 HStack(spacing: 12) {
                     quickStat(label: "Preset", value: viewModel.preset.title)
@@ -888,6 +890,12 @@ struct ContentView: View {
                     endPoint: .bottomTrailing
                 )
                 .ignoresSafeArea()
+                
+                Circle()
+                    .fill(Color(red: 0.2, green: 0.5, blue: 0.9).opacity(splashGlow ? 0.15 : 0.08))
+                    .frame(width: 600, height: 600)
+                    .blur(radius: 100)
+                    .offset(x: -geo.size.width * 0.25, y: geo.size.height * 0.2)
 
                 Circle()
                     .fill(Color(red: 0.4, green: 0.85, blue: 1.0).opacity(splashGlow ? 0.25 : 0.12))
@@ -898,46 +906,80 @@ struct ContentView: View {
                 VStack(spacing: 28) {
                     ZStack {
                         Circle()
-                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                            .stroke(
+                                LinearGradient(
+                                    colors: [Color.white.opacity(0.12), Color.white.opacity(0.04)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 1
+                            )
                             .frame(width: splashRingExpanded ? 200 : 100, height: splashRingExpanded ? 200 : 100)
+                            .scaleEffect(splashGlow ? 1.02 : 1.0)
 
                         Circle()
                             .trim(from: 0.1, to: 0.85)
                             .stroke(
                                 AngularGradient(
                                     colors: [
-                                        Color.white.opacity(0.1),
+                                        Color.white.opacity(0.05),
                                         Color(red: 0.45, green: 0.88, blue: 1.0),
+                                        Color(red: 0.8, green: 0.45, blue: 0.9),
                                         Color(red: 0.9, green: 0.35, blue: 0.5),
-                                        Color.white.opacity(0.1)
+                                        Color.white.opacity(0.05)
                                     ],
                                     center: .center
                                 ),
-                                style: StrokeStyle(lineWidth: 6, lineCap: .round)
+                                style: StrokeStyle(lineWidth: 5, lineCap: .round)
                             )
                             .frame(width: splashRingExpanded ? 160 : 70, height: splashRingExpanded ? 160 : 70)
                             .rotationEffect(.degrees(splashSweep ? 360 : 0))
+                            .blur(radius: 0.5)
 
                         logoTile(size: 72)
-                            .shadow(color: Color(red: 0.45, green: 0.86, blue: 1.0).opacity(splashGlow ? 0.5 : 0.2), radius: 20)
+                            .scaleEffect(splashGlow ? 1.03 : 1.0)
+                            .shadow(color: Color(red: 0.45, green: 0.86, blue: 1.0).opacity(splashGlow ? 0.6 : 0.25), radius: splashGlow ? 25 : 18)
                     }
 
-                    VStack(spacing: 8) {
+                    VStack(spacing: 10) {
                         Text("SpoofTrap")
                             .font(.system(size: 36, weight: .bold, design: .rounded))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [.white, .white.opacity(0.85)],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .shadow(color: .black.opacity(0.3), radius: 8, y: 4)
 
                         Text("Initializing")
                             .font(.system(size: 14, weight: .medium, design: .rounded))
-                            .foregroundStyle(.white.opacity(0.6))
+                            .foregroundStyle(.white.opacity(0.55))
+                            .tracking(1.5)
+                            .textCase(.uppercase)
                     }
 
-                    HStack(spacing: 8) {
-                        Capsule().fill(Color.white.opacity(0.15)).frame(width: 40, height: 5)
+                    HStack(spacing: 6) {
                         Capsule()
-                            .fill(Color(red: 0.45, green: 0.88, blue: 1.0).opacity(0.85))
-                            .frame(width: splashGlow ? 100 : 60, height: 5)
-                        Capsule().fill(Color.white.opacity(0.15)).frame(width: 40, height: 5)
+                            .fill(Color.white.opacity(0.12))
+                            .frame(width: 35, height: 4)
+                        Capsule()
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        Color(red: 0.45, green: 0.88, blue: 1.0).opacity(0.9),
+                                        Color(red: 0.6, green: 0.7, blue: 1.0).opacity(0.8)
+                                    ],
+                                    startPoint: .leading,
+                                    endPoint: .trailing
+                                )
+                            )
+                            .frame(width: splashGlow ? 90 : 55, height: 4)
+                            .shadow(color: Color(red: 0.45, green: 0.88, blue: 1.0).opacity(0.5), radius: 6)
+                        Capsule()
+                            .fill(Color.white.opacity(0.12))
+                            .frame(width: 35, height: 4)
                     }
                 }
             }
@@ -947,29 +989,71 @@ struct ContentView: View {
 
     // MARK: - Components
 
-    private func glassCard<Content: View>(accent: Bool = false, @ViewBuilder content: () -> Content) -> some View {
+    private func glassCard<Content: View>(accent: Bool = false, @ViewBuilder content: @escaping () -> Content) -> some View {
+        GlassCardView(accent: accent, content: content)
+    }
+}
+
+// MARK: - Glass Card with Hover
+
+struct GlassCardView<Content: View>: View {
+    let accent: Bool
+    @ViewBuilder let content: () -> Content
+    @State private var isHovering = false
+    
+    var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             content()
         }
         .padding(18)
         .background(
+            ZStack {
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: accent
+                                ? [Color.white.opacity(isHovering ? 0.12 : 0.10), Color.white.opacity(isHovering ? 0.08 : 0.06)]
+                                : [Color.white.opacity(isHovering ? 0.10 : 0.08), Color.white.opacity(isHovering ? 0.07 : 0.05)],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                
+                RoundedRectangle(cornerRadius: 24, style: .continuous)
+                    .fill(
+                        RadialGradient(
+                            colors: [Color.white.opacity(isHovering ? 0.05 : 0), Color.clear],
+                            center: .topLeading,
+                            startRadius: 0,
+                            endRadius: 200
+                        )
+                    )
+            }
+        )
+        .overlay(
             RoundedRectangle(cornerRadius: 24, style: .continuous)
-                .fill(
+                .stroke(
                     LinearGradient(
-                        colors: accent
-                            ? [Color.white.opacity(0.10), Color.white.opacity(0.06)]
-                            : [Color.white.opacity(0.08), Color.white.opacity(0.05)],
+                        colors: [
+                            Color.white.opacity(isHovering ? 0.18 : accent ? 0.12 : 0.08),
+                            Color.white.opacity(isHovering ? 0.10 : accent ? 0.06 : 0.04)
+                        ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
-                    )
+                    ),
+                    lineWidth: 1
                 )
-                .overlay(
-                    RoundedRectangle(cornerRadius: 24, style: .continuous)
-                        .stroke(Color.white.opacity(accent ? 0.12 : 0.08), lineWidth: 1)
-                )
-                .shadow(color: Color.black.opacity(0.2), radius: 20, y: 10)
         )
+        .shadow(color: Color.black.opacity(isHovering ? 0.25 : 0.2), radius: isHovering ? 24 : 20, y: isHovering ? 12 : 10)
+        .scaleEffect(isHovering ? 1.005 : 1.0)
+        .animation(.easeOut(duration: 0.2), value: isHovering)
+        .onHover { hovering in
+            isHovering = hovering
+        }
     }
+}
+
+extension ContentView {
 
     private func sectionTitle(_ text: String) -> some View {
         Text(text)
@@ -988,10 +1072,24 @@ struct ContentView: View {
     }
 
     private func statusDot(active: Bool) -> some View {
-        Circle()
-            .fill(active ? Color.green : Color.red)
-            .frame(width: 8, height: 8)
-            .shadow(color: (active ? Color.green : Color.red).opacity(0.5), radius: 4)
+        ZStack {
+            Circle()
+                .fill(active ? Color.green : Color.red.opacity(0.8))
+                .frame(width: 8, height: 8)
+            
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [Color.white.opacity(0.6), Color.clear],
+                        center: .topLeading,
+                        startRadius: 0,
+                        endRadius: 4
+                    )
+                )
+                .frame(width: 8, height: 8)
+        }
+        .shadow(color: (active ? Color.green : Color.red).opacity(pulse ? 0.7 : 0.4), radius: pulse ? 6 : 4)
+        .animation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true), value: pulse)
     }
 
     private func quickStat(label: String, value: String) -> some View {
@@ -1036,10 +1134,13 @@ struct ContentView: View {
             ForEach(BypassViewModel.ProxyPreset.allCases) { preset in
                 let isProOnly = preset == .fast || preset == .custom
                 let isLocked = isProOnly && !viewModel.proManager.isPro
+                let isSelected = viewModel.preset == preset
                 
                 Button {
                     if !isLocked {
-                        viewModel.applyPreset(preset)
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                            viewModel.applyPreset(preset)
+                        }
                     }
                 } label: {
                     HStack(spacing: 3) {
@@ -1054,50 +1155,70 @@ struct ContentView: View {
                     .font(.system(size: 10, weight: .semibold, design: .rounded))
                     .foregroundStyle(
                         isLocked ? .white.opacity(0.35) :
-                        viewModel.preset == preset ? .black.opacity(0.8) : .white.opacity(0.6)
+                        isSelected ? .black.opacity(0.85) : .white.opacity(0.6)
                     )
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 6)
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 7)
                     .background(
-                        RoundedRectangle(cornerRadius: 8, style: .continuous)
-                            .fill(viewModel.preset == preset && !isLocked ? Color.white : Color.clear)
+                        ZStack {
+                            if isSelected && !isLocked {
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .fill(Color.white)
+                                    .shadow(color: .black.opacity(0.15), radius: 4, y: 2)
+                            }
+                        }
                     )
+                    .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
                 }
                 .buttonStyle(.plain)
                 .disabled(viewModel.isRunning || isLocked)
+                .scaleEffect(isSelected ? 1.0 : 0.98)
+                .animation(.spring(response: 0.25, dampingFraction: 0.8), value: isSelected)
             }
         }
         .padding(3)
         .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color.black.opacity(0.2))
+            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                .fill(Color.black.opacity(0.25))
         )
     }
 
     private var scopePicker: some View {
         HStack(spacing: 4) {
             ForEach(BypassViewModel.ProxyScope.allCases) { scope in
+                let isSelected = viewModel.proxyScope == scope
+                
                 Button {
-                    viewModel.setProxyScope(scope)
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                        viewModel.setProxyScope(scope)
+                    }
                 } label: {
                     Text(scope.title)
                         .font(.system(size: 11, weight: .semibold, design: .rounded))
-                        .foregroundStyle(viewModel.proxyScope == scope ? .black.opacity(0.8) : .white.opacity(0.6))
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
+                        .foregroundStyle(isSelected ? .black.opacity(0.85) : .white.opacity(0.6))
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 7)
                         .background(
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                .fill(viewModel.proxyScope == scope ? Color.white : Color.clear)
+                            ZStack {
+                                if isSelected {
+                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                        .fill(Color.white)
+                                        .shadow(color: .black.opacity(0.15), radius: 4, y: 2)
+                                }
+                            }
                         )
+                        .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
                 }
                 .buttonStyle(.plain)
                 .disabled(viewModel.isRunning)
+                .scaleEffect(isSelected ? 1.0 : 0.98)
+                .animation(.spring(response: 0.25, dampingFraction: 0.8), value: isSelected)
             }
         }
         .padding(3)
         .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color.black.opacity(0.2))
+            RoundedRectangle(cornerRadius: 11, style: .continuous)
+                .fill(Color.black.opacity(0.25))
         )
     }
 
@@ -1195,19 +1316,105 @@ struct ContentView: View {
     }
 }
 
+// MARK: - Main Action Button
+
+struct MainActionButton: View {
+    let isRunning: Bool
+    let pulse: Bool
+    let actionTint: Color
+    let isDisabled: Bool
+    let action: () -> Void
+    
+    @State private var isHovering = false
+    @State private var isPressed = false
+    
+    var body: some View {
+        Button(action: {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                action()
+            }
+        }) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(
+                        LinearGradient(
+                            colors: [.white.opacity(0.98), actionTint],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+                
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(
+                        RadialGradient(
+                            colors: [Color.white.opacity(isHovering ? 0.3 : 0), Color.clear],
+                            center: .topLeading,
+                            startRadius: 0,
+                            endRadius: 150
+                        )
+                    )
+                
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .stroke(Color.white.opacity(isHovering ? 0.5 : 0.2), lineWidth: 1)
+                
+                VStack(spacing: 4) {
+                    Text(isRunning ? "Stop Session" : "Start Session")
+                        .font(.system(size: 20, weight: .bold, design: .rounded))
+                        .contentTransition(.numericText())
+
+                    Text(isRunning ? "Terminate proxy" : "Launch Roblox")
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .opacity(0.7)
+                }
+                .foregroundStyle(Color.black.opacity(0.85))
+            }
+            .frame(maxWidth: .infinity)
+            .frame(height: 72)
+            .shadow(color: actionTint.opacity(pulse ? 0.5 : 0.25), radius: isHovering ? 24 : pulse ? 20 : 12, y: isHovering ? 6 : 4)
+        }
+        .buttonStyle(.plain)
+        .disabled(isDisabled)
+        .scaleEffect(isPressed ? 0.97 : isHovering ? 1.01 : 1.0)
+        .animation(.spring(response: 0.25, dampingFraction: 0.7), value: isHovering)
+        .animation(.spring(response: 0.2, dampingFraction: 0.6), value: isPressed)
+        .onHover { hovering in
+            isHovering = hovering
+        }
+        .simultaneousGesture(
+            DragGesture(minimumDistance: 0)
+                .onChanged { _ in isPressed = true }
+                .onEnded { _ in isPressed = false }
+        )
+        .opacity(isDisabled ? 0.5 : 1.0)
+    }
+}
+
 // MARK: - Small Button Style
 
 struct SmallButtonStyle: ButtonStyle {
+    @State private var isHovering = false
+    
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .font(.system(size: 11, weight: .semibold, design: .rounded))
-            .foregroundStyle(.white.opacity(0.8))
+            .foregroundStyle(.white.opacity(configuration.isPressed ? 1.0 : isHovering ? 0.95 : 0.8))
             .padding(.horizontal, 10)
-            .padding(.vertical, 5)
+            .padding(.vertical, 6)
             .background(
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
-                    .fill(Color.white.opacity(configuration.isPressed ? 0.12 : 0.08))
+                    .fill(Color.white.opacity(configuration.isPressed ? 0.15 : isHovering ? 0.12 : 0.08))
             )
+            .overlay(
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(Color.white.opacity(isHovering ? 0.15 : 0), lineWidth: 1)
+            )
+            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
+            .animation(.spring(response: 0.2, dampingFraction: 0.7), value: configuration.isPressed)
+            .onHover { hovering in
+                withAnimation(.easeInOut(duration: 0.15)) {
+                    isHovering = hovering
+                }
+            }
     }
 }
 

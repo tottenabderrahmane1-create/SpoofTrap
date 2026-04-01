@@ -8,19 +8,19 @@
     <string>com.spooftrap.app</string>
     <key>CFBundleName</key>
     <string>SpoofTrap</string>
+    <key>CFBundleVersion</key>
+    <string>2026.03.29</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
-    <key>CFBundleShortVersionString</key>
-    <string>2026.03.31.1</string>
-    <key>CFBundleVersion</key>
-    <string>1</string>
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
     <key>LSMinimumSystemVersion</key>
     <string>13.0</string>
     <key>NSHighResolutionCapable</key>
     <true/>
-    <key>LSUIElement</key>
-    <false/>
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.utilities</string>
 </dict>
 </plist>
