@@ -215,7 +215,15 @@ Store in `%APPDATA%\SpoofTrap\license.json`:
 - Full FastFlags editor (add/edit/remove flags)
 - Advanced settings (Chunk Size, Disorder toggle)
 - Detailed session stats
-- Custom mod file imports (App Icon, Fonts, Skybox, Avatar BG categories)
+- Custom mod file imports (App Icon, Fonts, Avatar BG categories)
+- Custom FPS targets (144, 240, Max/unlimited)
+- Detailed Discord Rich Presence (game name, thumbnail, join button)
+- Auto-rejoin on disconnect
+- Multi-instance Roblox launching
+- Custom accent color themes
+- Roblox update channel switching (ZNext, ZCanary)
+- Full game history (unlimited entries)
+- Unlimited Quick Launch favorites
 
 **Free Users Get:**
 - Stable & Balanced presets
@@ -224,6 +232,11 @@ Store in `%APPDATA%\SpoofTrap\license.json`:
 - Core bypass functionality
 - Choose spoofdpi binary location
 - Death Sound and Custom Cursor mod categories
+- FPS Unlocker (60 or 120fps)
+- Basic Discord Rich Presence ("Playing Roblox")
+- Server region display (region name only)
+- Quick Launch favorites (up to 3)
+- Game history (last 5 sessions)
 
 ### 4. FastFlags
 
@@ -392,7 +405,126 @@ Advanced settings (PRO only):
 - App Launch Delay: 0-10 seconds (default 0)
 - Reduce Motion: disable UI animations for better performance (this setting is available to ALL users, not PRO-only)
 
-### 6. UI Design
+### 7. FPS Unlocker
+
+A dedicated toggle in the main Settings card. Under the hood it sets `DFIntTaskSchedulerTargetFps` FastFlag.
+
+| FPS Option | Value | Tier |
+|-----------|-------|------|
+| 60 (Off) | 60 | Free |
+| 120 | 120 | Free |
+| 144 | 144 | Pro |
+| 240 | 240 | Pro |
+| Max | 9999 | Pro |
+
+When user selects a value != 60, enable FastFlags if not already enabled, find the `DFIntTaskSchedulerTargetFps` flag and set its value.
+
+### 8. Discord Rich Presence
+
+Connect to Discord's local IPC socket (`discord-ipc-0` through `discord-ipc-9`).
+
+**Windows IPC path:** `\\?\pipe\discord-ipc-0` (named pipe, not Unix socket)
+
+**Protocol:**
+1. Connect to named pipe
+2. Send handshake frame (opcode 0): `{"v": 1, "client_id": "1192124994039697408"}`
+3. Read response to confirm connection
+4. Send SET_ACTIVITY frames (opcode 1) every 15 seconds with current game info
+
+**Free users:** Activity shows "Playing Roblox" (no game name)
+**Pro users:** Activity shows game name, thumbnail, elapsed time, and "Join Game" button
+
+### 9. Roblox Log Watcher
+
+Parse Roblox logs to detect game joins, server IPs, and disconnects.
+
+**Windows log directory:** `%LOCALAPPDATA%\Roblox\logs\`
+
+**Key log patterns:**
+- Game join: `Joining game` followed by `place NNNNN` → extract PlaceId
+- Job ID: UUID in single quotes after "Joining game"
+- Server IP: `UDMUX` line contains server IP address
+- Disconnect: lines containing `Disconnected`, `Connection lost`, or `Kicked`
+
+**Game name resolution:** GET `https://games.roblox.com/v1/games/multiget-place-details?placeIds={placeId}`
+**Server region resolution:** GET `http://ip-api.com/json/{ip}?fields=country,regionName,city,query,lat,lon`
+
+### 10. Quick Launch / Favorites
+
+Store favorite games in `favorites.json` alongside settings.
+
+```json
+[
+  {"id": "uuid", "name": "Blox Fruits", "placeId": "2753915549", "addedAt": "2026-04-04T00:00:00Z"}
+]
+```
+
+Launch via deep link: `roblox://placeId=2753915549`
+
+**Free:** max 3 favorites. **Pro:** unlimited.
+
+### 11. Auto-Rejoin on Disconnect (Pro Only)
+
+Monitor the log watcher for disconnect events. When detected while session is running:
+1. Capture last PlaceId and JobId from log watcher
+2. Open `roblox://placeId={placeId}&gameInstanceId={jobId}`
+3. Log the rejoin attempt
+
+Poll every 3 seconds. Require Pro license.
+
+### 12. Game History
+
+Store in `game_history.json`. Each entry:
+
+```json
+{
+  "id": "uuid",
+  "gameName": "Blox Fruits",
+  "placeId": "2753915549",
+  "startTime": "2026-04-04T15:00:00Z",
+  "duration": 3600.0,
+  "serverRegion": "Dallas, Texas, United States",
+  "preset": "stable"
+}
+```
+
+Cap at 100 entries. **Free:** show last 5. **Pro:** full history with clear option.
+
+### 13. Multi-Instance (Pro Only)
+
+**Windows approach:** Roblox uses a mutex to prevent multiple instances. The workaround:
+1. Copy Roblox folder to a temp directory
+2. Modify the `AppSettings.xml` to use a different mutex name, OR use a mutex killer
+3. Launch the copy
+
+Alternatively, use a mutex handle closer tool before launching a second instance.
+
+Clean up temp copies after the process exits (30s delay).
+
+### 14. Custom Accent Color Themes (Pro Only)
+
+Store selected accent color hex in settings. Available presets:
+
+| Name | Hex |
+|------|-----|
+| Cyan (default) | #73DBFF |
+| Red | #FF6B6B |
+| Purple | #A78BFA |
+| Green | #34D399 |
+| Yellow | #FBBF24 |
+| Pink | #F472B6 |
+
+Apply to accent elements throughout the UI.
+
+### 15. Roblox Update Channel Switching (Pro Only)
+
+Write the channel name to a config file before Roblox launch.
+
+**Windows path:** `%LOCALAPPDATA%\Roblox\GlobalBasicSettings_13.xml` or use the registry key `HKCU\Software\Roblox\RobloxStudioBrowser\roblox.com\Channel`
+
+Channels: `LIVE` (default), `ZNext`, `ZCanary`
+
+### 16. UI Design
 
 Modern dark theme matching macOS version:
 
@@ -466,11 +598,16 @@ SpoofTrapWindows/
 │   │   ├── ProxyService.cs
 │   │   ├── FastFlagsManager.cs
 │   │   ├── ModsManager.cs
+│   │   ├── DiscordRPCManager.cs
+│   │   ├── RobloxLogWatcher.cs
+│   │   ├── GameHistoryManager.cs
 │   │   └── SettingsService.cs
 │   ├── Models/
 │   │   ├── LicenseInfo.cs
 │   │   ├── FastFlag.cs
 │   │   ├── InstalledMod.cs
+│   │   ├── FavoriteGame.cs
+│   │   ├── GameSession.cs
 │   │   ├── ProxyPreset.cs
 │   │   └── SessionStats.cs
 │   ├── Controls/
