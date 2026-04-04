@@ -8,6 +8,7 @@ struct ContentView: View {
     @State private var splashProgress: CGFloat = 0
     @State private var showingAdvanced = false
     @State private var showingFastFlags = false
+    @State private var showingMods = false
     @State private var showingStats = false
     @State private var copyConfirmation = false
 
@@ -58,21 +59,25 @@ struct ContentView: View {
                 settingsCard
                 fastFlagsCard
                 
-                // FastFlags detail is available for all users
                 if showingFastFlags {
                     fastFlagsDetailCard
                 }
                 
-                // Pro-only features
-                if viewModel.proManager.isPro {
-                    if showingAdvanced {
-                        advancedCard
-                    }
-                    
-                    if showingStats {
-                        statsCard
-                    }
-                } else {
+                modsCard
+                
+                if showingMods {
+                    modsDetailCard
+                }
+                
+                if showingAdvanced && viewModel.proManager.isPro {
+                    advancedCard
+                }
+                
+                if showingStats && viewModel.proManager.isPro {
+                    statsCard
+                }
+                
+                if !viewModel.proManager.isPro {
                     upgradeCard
                 }
             }
@@ -186,29 +191,48 @@ struct ContentView: View {
                 HStack(spacing: 10) {
                     sectionTitle("Settings")
                     Spacer()
-                    if viewModel.proManager.isPro {
-                        Button {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                showingStats.toggle()
-                            }
-                        } label: {
+                    
+                    Button {
+                        guard viewModel.proManager.isPro else { return }
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            showingStats.toggle()
+                        }
+                    } label: {
+                        HStack(spacing: 3) {
                             Image(systemName: "chart.bar.fill")
                                 .font(.system(size: 12))
-                                .foregroundStyle(showingStats ? .purple : .white.opacity(0.4))
-                        }
-                        .buttonStyle(.plain)
-                        
-                        Button {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                showingAdvanced.toggle()
+                            if !viewModel.proManager.isPro {
+                                Image(systemName: "lock.fill")
+                                    .font(.system(size: 8))
                             }
-                        } label: {
+                        }
+                        .foregroundStyle(
+                            !viewModel.proManager.isPro ? .white.opacity(0.2)
+                            : showingStats ? .purple : .white.opacity(0.4)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    
+                    Button {
+                        guard viewModel.proManager.isPro else { return }
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            showingAdvanced.toggle()
+                        }
+                    } label: {
+                        HStack(spacing: 3) {
                             Image(systemName: "gearshape.fill")
                                 .font(.system(size: 12))
-                                .foregroundStyle(showingAdvanced ? .cyan : .white.opacity(0.4))
+                            if !viewModel.proManager.isPro {
+                                Image(systemName: "lock.fill")
+                                    .font(.system(size: 8))
+                            }
                         }
-                        .buttonStyle(.plain)
+                        .foregroundStyle(
+                            !viewModel.proManager.isPro ? .white.opacity(0.2)
+                            : showingAdvanced ? .cyan : .white.opacity(0.4)
+                        )
                     }
+                    .buttonStyle(.plain)
                 }
 
                 VStack(alignment: .leading, spacing: 6) {
@@ -379,6 +403,7 @@ struct ContentView: View {
                     }
                     Spacer()
                     Button {
+                        guard viewModel.proManager.canEditFastFlags else { return }
                         withAnimation(.easeInOut(duration: 0.2)) {
                             showingFastFlags.toggle()
                         }
@@ -387,9 +412,13 @@ struct ContentView: View {
                             Image(systemName: "flag.fill")
                                 .font(.system(size: 10))
                             Text(showingFastFlags ? "Hide" : "Edit")
+                            if !viewModel.proManager.canEditFastFlags {
+                                Image(systemName: "lock.fill")
+                                    .font(.system(size: 8))
+                            }
                         }
                         .font(.system(size: 12, weight: .semibold, design: .rounded))
-                        .foregroundStyle(.cyan.opacity(0.8))
+                        .foregroundStyle(viewModel.proManager.canEditFastFlags ? .cyan.opacity(0.8) : .white.opacity(0.25))
                     }
                     .buttonStyle(.plain)
                 }
@@ -549,6 +578,221 @@ struct ContentView: View {
         )
     }
 
+    // MARK: - Mods
+
+    private var modsCard: some View {
+        glassCard {
+            VStack(alignment: .leading, spacing: 16) {
+                HStack {
+                    HStack(spacing: 8) {
+                        sectionTitle("Mods")
+                        if viewModel.modsManager.isEnabled && viewModel.modsManager.enabledCount > 0 {
+                            Text("\(viewModel.modsManager.enabledCount)")
+                                .font(.system(size: 9, weight: .bold, design: .rounded))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Capsule().fill(Color.purple))
+                        }
+                    }
+                    Spacer()
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            showingMods.toggle()
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "puzzlepiece.fill")
+                                .font(.system(size: 10))
+                            Text(showingMods ? "Hide" : "Browse")
+                        }
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.purple.opacity(0.8))
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                settingRow(label: "Enable Mods") {
+                    Toggle("", isOn: $viewModel.modsManager.isEnabled)
+                        .labelsHidden()
+                        .toggleStyle(.switch)
+                        .controlSize(.small)
+                        .tint(.purple)
+                        .disabled(viewModel.isRunning)
+                }
+
+                if viewModel.modsManager.isEnabled {
+                    HStack(spacing: 8) {
+                        ForEach(ModsManager.categories.prefix(3)) { cat in
+                            modCategorySummary(cat)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private func modCategorySummary(_ cat: ModCategory) -> some View {
+        let active = viewModel.modsManager.activeMod(for: cat.id)
+        return VStack(spacing: 4) {
+            Image(systemName: cat.icon)
+                .font(.system(size: 14))
+                .foregroundStyle(active != nil ? .purple : .white.opacity(0.3))
+            Text(active?.name ?? "Default")
+                .font(.system(size: 9, weight: .medium, design: .rounded))
+                .foregroundStyle(.white.opacity(active != nil ? 0.8 : 0.4))
+                .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(active != nil ? Color.purple.opacity(0.1) : Color.white.opacity(0.04))
+        )
+    }
+
+    private var modsDetailCard: some View {
+        glassCard {
+            VStack(alignment: .leading, spacing: 14) {
+                HStack {
+                    Text("Mod Browser")
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+
+                    Spacer()
+
+                    if viewModel.modsManager.installedMods.contains(where: { $0.originalBackedUp }) {
+                        Button {
+                            viewModel.modsManager.restoreOriginals(robloxAppPath: viewModel.robloxAppPath)
+                        } label: {
+                            Text("Restore All")
+                                .font(.system(size: 11, weight: .semibold, design: .rounded))
+                                .foregroundStyle(.orange.opacity(0.8))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
+                ForEach(ModsManager.categories) { cat in
+                    modCategorySection(cat)
+                }
+            }
+        }
+        .transition(.opacity.combined(with: .move(edge: .top)))
+    }
+
+    private func modCategorySection(_ cat: ModCategory) -> some View {
+        let locked = !viewModel.proManager.canUseModCategory(cat.id)
+        let categoryMods = viewModel.modsManager.mods(for: cat.id)
+
+        return VStack(alignment: .leading, spacing: 8) {
+            HStack(spacing: 8) {
+                Image(systemName: cat.icon)
+                    .font(.system(size: 12))
+                    .foregroundStyle(locked ? .white.opacity(0.3) : .purple)
+
+                VStack(alignment: .leading, spacing: 1) {
+                    HStack(spacing: 6) {
+                        Text(cat.name)
+                            .font(.system(size: 12, weight: .semibold, design: .rounded))
+                            .foregroundStyle(locked ? .white.opacity(0.4) : .white)
+                        if locked {
+                            Text("PRO")
+                                .font(.system(size: 8, weight: .heavy, design: .rounded))
+                                .foregroundStyle(.black)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 1)
+                                .background(
+                                    LinearGradient(colors: [.yellow, .orange], startPoint: .leading, endPoint: .trailing)
+                                )
+                                .clipShape(Capsule())
+                        }
+                    }
+                    Text(cat.description)
+                        .font(.system(size: 10, weight: .medium, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.4))
+                }
+
+                Spacer()
+
+                if !locked {
+                    Button {
+                        viewModel.modsManager.importCustomMod(for: cat.id)
+                    } label: {
+                        Image(systemName: "plus.circle.fill")
+                            .font(.system(size: 14))
+                            .foregroundStyle(.purple.opacity(0.7))
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(viewModel.isRunning)
+                }
+            }
+
+            if !locked {
+                ForEach(categoryMods) { mod in
+                    modRow(mod: mod)
+                }
+
+                if categoryMods.isEmpty {
+                    Text("No custom mods — import a file to get started")
+                        .font(.system(size: 10, weight: .medium, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.3))
+                        .padding(.leading, 20)
+                }
+            }
+        }
+        .padding(.vertical, 8)
+        .padding(.horizontal, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color.white.opacity(locked ? 0.02 : 0.04))
+        )
+        .opacity(locked ? 0.6 : 1)
+    }
+
+    private func modRow(mod: InstalledMod) -> some View {
+        HStack(spacing: 10) {
+            Toggle("", isOn: Binding(
+                get: { mod.isEnabled },
+                set: { _ in viewModel.modsManager.toggleMod(mod) }
+            ))
+            .labelsHidden()
+            .toggleStyle(.switch)
+            .controlSize(.mini)
+            .disabled(viewModel.isRunning)
+
+            VStack(alignment: .leading, spacing: 1) {
+                Text(mod.name)
+                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                    .foregroundStyle(mod.isEnabled ? .white : .white.opacity(0.6))
+
+                Text(mod.isBuiltIn ? "Built-in" : "Custom")
+                    .font(.system(size: 9, weight: .medium, design: .rounded))
+                    .foregroundStyle(mod.isBuiltIn ? .cyan.opacity(0.6) : .purple.opacity(0.6))
+            }
+
+            Spacer()
+
+            if !mod.isBuiltIn {
+                Button {
+                    viewModel.modsManager.removeMod(mod)
+                } label: {
+                    Image(systemName: "trash")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.red.opacity(0.6))
+                }
+                .buttonStyle(.plain)
+                .disabled(viewModel.isRunning)
+            }
+        }
+        .padding(.vertical, 4)
+        .padding(.horizontal, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(mod.isEnabled ? Color.purple.opacity(0.08) : Color.clear)
+        )
+    }
+
     // MARK: - Pro Features
     
     @State private var licenseKeyInput: String = ""
@@ -570,6 +814,7 @@ struct ContentView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     upgradeFeatureRow(icon: "slider.horizontal.3", text: "Fast & Custom presets")
                     upgradeFeatureRow(icon: "flag.fill", text: "Full FastFlags editor")
+                    upgradeFeatureRow(icon: "puzzlepiece.fill", text: "Custom mod imports")
                     upgradeFeatureRow(icon: "gearshape.2.fill", text: "Advanced settings")
                     upgradeFeatureRow(icon: "chart.bar.fill", text: "Detailed session stats")
                 }

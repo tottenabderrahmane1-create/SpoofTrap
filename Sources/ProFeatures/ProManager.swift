@@ -29,6 +29,14 @@ final class ProManager: ObservableObject {
     var canEditFastFlags: Bool { isPro }
     var canUseAdvancedSettings: Bool { isPro }
     var canViewDetailedStats: Bool { isPro }
+    var canImportCustomMods: Bool { isPro }
+    
+    func canUseModCategory(_ categoryId: String) -> Bool {
+        guard let cat = ModsManager.categories.first(where: { $0.id == categoryId }) else {
+            return false
+        }
+        return !cat.requiresPro || isPro
+    }
     
     var currentPlan: String {
         licenseManager.currentLicense?.plan ?? "free"

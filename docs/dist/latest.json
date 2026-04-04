@@ -1,26 +1,27 @@
 {
-  "version": "2026.03.31.1",
-  "releaseDate": "2026-03-31",
+  "version": "1.3.0",
+  "releaseDate": "2026-04-04",
   "downloads": {
     "zip": {
-      "url": "https://raw.githubusercontent.com/spooftrap-app/SpoofTrap-site/main/dist/SpoofTrap.zip",
-      "sha256": "8951d28f0e1888de8206285582cfc212308fc6b7091dd8d6d56c563cd33262ac"
+      "url": "https://raw.githubusercontent.com/spooftrap-app/SpoofTrap-site/main/docs/dist/SpoofTrap.zip",
+      "sha256": "3b18360b9986b0157aa1bb59051b05bea985c19351fad92549862908e04b74c2"
     },
     "pkg": {
-      "url": "https://raw.githubusercontent.com/spooftrap-app/SpoofTrap-site/main/dist/SpoofTrap.pkg",
-      "sha256": "c4cbdbea1579167f631d743ddb5ac2756c393f349de63482e042a755006d3df8"
+      "url": "https://raw.githubusercontent.com/spooftrap-app/SpoofTrap-site/main/docs/dist/SpoofTrap.pkg",
+      "sha256": "563d845be6e6df1c10dad17df6fd3d0ef58b5d7d2f19b99807ea7948eb45ece1"
     },
     "dmg": {
-      "url": "https://raw.githubusercontent.com/spooftrap-app/SpoofTrap-site/main/dist/SpoofTrap.dmg",
-      "sha256": "d49c437d7f7be849e37b4528a9b8384d8661f57175c955c321b25f6c2782a358"
+      "url": "https://raw.githubusercontent.com/spooftrap-app/SpoofTrap-site/main/docs/dist/SpoofTrap.dmg",
+      "sha256": "c9588e176067d171d1a8c00c73ad656f78ed0bbb7761f1d74b7e728ccf5ab696"
     }
   },
   "changelog": [
-    "Added license key activation system",
-    "Pro features now require valid license",
-    "Added license info display and deactivation",
-    "Improved UI with PRO badge indicator",
-    "Backend powered by Supabase"
+    "New: File replacement mods (Bloxstrap-style)",
+    "New: Death Sound, Custom Cursor, App Icon, Fonts, Skybox, Avatar BG mod categories",
+    "Pro: Custom mod file imports for premium categories",
+    "Fix: FastFlags editor now properly locked for free users",
+    "Fix: Settings gear and stats icons visible but locked for free users",
+    "Updated Windows build guide with verified specs"
   ],
-  "minimumOS": "13.0"
+  "minimumOS": "12.0"
 }

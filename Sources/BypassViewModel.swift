@@ -99,6 +99,7 @@ final class BypassViewModel: ObservableObject {
     @Published private(set) var resolvedBinaryPath: String?
     @Published private(set) var binaryAvailable = false
     @Published var fastFlagsManager = FastFlagsManager()
+    @Published var modsManager = ModsManager()
     
     // Pro Features
     @Published var proManager = ProManager()
@@ -351,6 +352,16 @@ final class BypassViewModel: ObservableObject {
                 appendLog("FastFlags applied: \(fastFlagsManager.enabledCount) flags")
             } else {
                 appendLog("Warning: Failed to apply FastFlags")
+            }
+        }
+
+        if modsManager.isEnabled && modsManager.enabledCount > 0 {
+            let result = modsManager.applyMods(robloxAppPath: robloxAppPath)
+            if result.applied > 0 {
+                appendLog("Mods applied: \(result.applied) file(s)")
+            }
+            if result.failed > 0 {
+                appendLog("Warning: \(result.failed) mod(s) failed to apply")
             }
         }
         
