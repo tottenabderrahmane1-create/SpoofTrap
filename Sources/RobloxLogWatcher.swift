@@ -268,23 +268,34 @@ final class RobloxLogWatcher: ObservableObject {
             }
         }
 
-        // Player join/leave detection
-        if let joinRange = trimmed.range(of: #"([\w\d_]+) has joined"#, options: .regularExpression) {
+        // Player join/leave detection — only match Roblox-style usernames (3-20 chars, alphanumeric + underscore)
+        let reservedWords: Set<String> = ["FPS", "game", "server", "the", "has", "connection", "player", "network", "client"]
+        if let joinRange = trimmed.range(of: #"\b([A-Za-z][A-Za-z0-9_]{2,19}) has joined the game\b"#, options: .regularExpression) {
             let joinMatch = String(trimmed[joinRange])
-            let playerName = joinMatch.replacingOccurrences(of: " has joined", with: "")
-            if !playerName.isEmpty && playerName.count < 30 {
-                let event = PlayerEvent(timestamp: Date(), playerName: playerName, action: .joined)
-                playerEvents.append(event)
+            let playerName = joinMatch.replacingOccurrences(of: " has joined the game", with: "")
+            if !playerName.isEmpty && !reservedWords.contains(playerName) {
+                playerEvents.append(PlayerEvent(timestamp: Date(), playerName: playerName, action: .joined))
+                if playerEvents.count > 200 { playerEvents.removeFirst(playerEvents.count - 200) }
+            }
+        } else if let joinRange2 = trimmed.range(of: #"'([A-Za-z][A-Za-z0-9_]{2,19})' has joined"#, options: .regularExpression) {
+            let raw = String(trimmed[joinRange2]).replacingOccurrences(of: "'", with: "").replacingOccurrences(of: " has joined", with: "")
+            if !raw.isEmpty && !reservedWords.contains(raw) {
+                playerEvents.append(PlayerEvent(timestamp: Date(), playerName: raw, action: .joined))
                 if playerEvents.count > 200 { playerEvents.removeFirst(playerEvents.count - 200) }
             }
         }
 
-        if let leftRange = trimmed.range(of: #"([\w\d_]+) has left"#, options: .regularExpression) {
+        if let leftRange = trimmed.range(of: #"\b([A-Za-z][A-Za-z0-9_]{2,19}) has left the game\b"#, options: .regularExpression) {
             let leftMatch = String(trimmed[leftRange])
-            let playerName = leftMatch.replacingOccurrences(of: " has left", with: "")
-            if !playerName.isEmpty && playerName.count < 30 {
-                let event = PlayerEvent(timestamp: Date(), playerName: playerName, action: .left)
-                playerEvents.append(event)
+            let playerName = leftMatch.replacingOccurrences(of: " has left the game", with: "")
+            if !playerName.isEmpty && !reservedWords.contains(playerName) {
+                playerEvents.append(PlayerEvent(timestamp: Date(), playerName: playerName, action: .left))
+                if playerEvents.count > 200 { playerEvents.removeFirst(playerEvents.count - 200) }
+            }
+        } else if let leftRange2 = trimmed.range(of: #"'([A-Za-z][A-Za-z0-9_]{2,19})' has left"#, options: .regularExpression) {
+            let raw = String(trimmed[leftRange2]).replacingOccurrences(of: "'", with: "").replacingOccurrences(of: " has left", with: "")
+            if !raw.isEmpty && !reservedWords.contains(raw) {
+                playerEvents.append(PlayerEvent(timestamp: Date(), playerName: raw, action: .left))
                 if playerEvents.count > 200 { playerEvents.removeFirst(playerEvents.count - 200) }
             }
         }
@@ -292,8 +303,7 @@ final class RobloxLogWatcher: ObservableObject {
         if trimmed.contains("removing player") {
             if let rmRange = trimmed.range(of: #"removing player (\d+)"#, options: .regularExpression) {
                 let rmMatch = String(trimmed[rmRange]).replacingOccurrences(of: "removing player ", with: "Player#")
-                let event = PlayerEvent(timestamp: Date(), playerName: rmMatch, action: .left)
-                playerEvents.append(event)
+                playerEvents.append(PlayerEvent(timestamp: Date(), playerName: rmMatch, action: .left))
                 if playerEvents.count > 200 { playerEvents.removeFirst(playerEvents.count - 200) }
             }
         }

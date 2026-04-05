@@ -353,6 +353,7 @@ final class FastFlagProfileManager: ObservableObject {
             }
         }
         manager.selectedPreset = .none
+        manager.isEnabled = profile.flags.contains(where: { $0.isEnabled })
     }
 
     private func loadProfiles() {

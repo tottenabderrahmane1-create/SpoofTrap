@@ -61,7 +61,8 @@ final class CacheCleanerManager: ObservableObject {
         let before = cacheInfo.totalSize
         var deletedFiles = 0
 
-        deletedFiles += cleanDirectory(logsDir, keepRecent: 1)
+        let robloxRunning = isRobloxRunning()
+        deletedFiles += cleanDirectory(logsDir, keepRecent: robloxRunning ? 2 : 1)
         deletedFiles += cleanDirectory(cacheDir, keepRecent: 0)
 
         for url in robloxTempItems() {
@@ -123,6 +124,19 @@ final class CacheCleanerManager: ObservableObject {
     private func fileSize(_ url: URL) -> Int64? {
         guard let vals = try? url.resourceValues(forKeys: [.fileSizeKey]) else { return nil }
         return Int64(vals.fileSize ?? 0)
+    }
+
+    private func isRobloxRunning() -> Bool {
+        let proc = Process()
+        proc.executableURL = URL(fileURLWithPath: "/usr/bin/pgrep")
+        proc.arguments = ["-x", "RobloxPlayer"]
+        proc.standardOutput = FileHandle.nullDevice
+        proc.standardError = FileHandle.nullDevice
+        do {
+            try proc.run()
+            proc.waitUntilExit()
+            return proc.terminationStatus == 0
+        } catch { return false }
     }
 
     static func formatBytes(_ bytes: Int64) -> String {
