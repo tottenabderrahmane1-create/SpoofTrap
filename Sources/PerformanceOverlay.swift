@@ -71,6 +71,26 @@ private struct OverlayContentView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
+            if let fps = logWatcher.currentFPS {
+                HStack(spacing: 6) {
+                    Image(systemName: "gauge.high")
+                        .font(.system(size: 10))
+                        .foregroundStyle(fpsColor(fps))
+                    Text("\(fps) FPS")
+                        .font(.system(size: 13, weight: .bold, design: .monospaced))
+                        .foregroundStyle(fpsColor(fps))
+                }
+            }
+            if let ping = logWatcher.currentPing {
+                HStack(spacing: 6) {
+                    Image(systemName: "antenna.radiowaves.left.and.right")
+                        .font(.system(size: 10))
+                        .foregroundStyle(pingColor(ping))
+                    Text(ping)
+                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                        .foregroundStyle(pingColor(ping))
+                }
+            }
             if let region = logWatcher.currentRegion {
                 HStack(spacing: 6) {
                     Image(systemName: "globe")
@@ -110,5 +130,21 @@ private struct OverlayContentView: View {
                         .stroke(Color.white.opacity(0.15), lineWidth: 1)
                 )
         )
+    }
+
+    private func fpsColor(_ fps: String) -> Color {
+        guard let val = Int(fps) else { return .white }
+        if val >= 55 { return .green }
+        if val >= 30 { return .yellow }
+        return .red
+    }
+
+    private func pingColor(_ ping: String) -> Color {
+        let digits = ping.components(separatedBy: CharacterSet.decimalDigits.inverted).joined()
+        guard let val = Int(digits) else { return .white }
+        if val <= 60 { return .green }
+        if val <= 120 { return .yellow }
+        if val <= 200 { return .orange }
+        return .red
     }
 }

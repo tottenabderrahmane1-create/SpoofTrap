@@ -1,6 +1,8 @@
 import AppKit
+import Carbon.HIToolbox
 import Combine
 import Foundation
+import UserNotifications
 
 @MainActor
 final class BypassViewModel: ObservableObject {
@@ -130,6 +132,8 @@ final class BypassViewModel: ObservableObject {
     // Pro Features
     @Published var proManager = ProManager()
     @Published var sessionStats = SessionStats()
+    
+    let globalHotkeys = GlobalHotkeyManager()
 
     private let proxyAddress = "127.0.0.1:8080"
     private let proxyURL = "http://127.0.0.1:8080"
@@ -156,6 +160,7 @@ final class BypassViewModel: ObservableObject {
             menuBarManager.setEnabled(true, viewModel: self)
         }
         menuBarManager.setup(viewModel: self)
+        globalHotkeys.setup(viewModel: self)
         forwardNestedChanges()
     }
 
@@ -672,6 +677,42 @@ final class BypassViewModel: ObservableObject {
         NSPasteboard.general.setString(text, forType: .string)
     }
 
+    func exportLogs() {
+        let panel = NSSavePanel()
+        panel.title = "Export Session Log"
+        let dateStr = ISO8601DateFormatter().string(from: Date()).replacingOccurrences(of: ":", with: "-")
+        panel.nameFieldStringValue = "SpoofTrap-Log-\(dateStr).txt"
+        panel.allowedContentTypes = [.plainText]
+        panel.canCreateDirectories = true
+
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        let text = logs.joined(separator: "\n")
+        do {
+            try text.write(to: url, atomically: true, encoding: .utf8)
+            appendLog("Log exported to \(url.lastPathComponent)")
+        } catch {
+            appendLog("Log export failed: \(error.localizedDescription)")
+        }
+    }
+
+    func sendNotification(title: String, body: String) {
+        let center = UNUserNotificationCenter.current()
+        center.requestAuthorization(options: [.alert, .sound]) { granted, _ in
+            guard granted else { return }
+            let content = UNMutableNotificationContent()
+            content.title = title
+            content.body = body
+            content.sound = .default
+            let request = UNNotificationRequest(
+                identifier: UUID().uuidString,
+                content: content,
+                trigger: nil
+            )
+            center.add(request)
+        }
+    }
+
     func startBypass() {
         guard !isRunning else { return }
 
@@ -787,6 +828,8 @@ final class BypassViewModel: ObservableObject {
 
         perfOverlay.hide()
 
+        sendNotification(title: "SpoofTrap", body: "Session stopped.")
+
         Task {
             try? await Task.sleep(nanoseconds: 700_000_000)
             await runPKill()
@@ -874,6 +917,7 @@ final class BypassViewModel: ObservableObject {
             outputPipe = pipe
             state = .running
             appendLog("spoofdpi active on \(proxyAddress).")
+            sendNotification(title: "SpoofTrap", body: "Session started — proxy active on \(proxyAddress)")
 
             if proxyScope == .system {
                 applySystemProxyMode()
@@ -1385,6 +1429,7 @@ final class BypassViewModel: ObservableObject {
 
                 if self.logWatcher.disconnected,
                    let placeId = self.logWatcher.currentPlaceId {
+                    self.sendNotification(title: "SpoofTrap", body: "Disconnected — auto-rejoining...")
                     self.appendLog("Disconnect detected. Auto-rejoining...")
                     let jobIdPart = self.logWatcher.currentJobId.map { "&gameInstanceId=\($0)" } ?? ""
                     if let url = URL(string: "roblox://placeId=\(placeId)\(jobIdPart)") {

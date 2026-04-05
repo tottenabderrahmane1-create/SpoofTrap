@@ -13,8 +13,10 @@ struct ContentView: View {
     @State private var showingHistory = false
     @State private var showingFavorites = false
     @State private var copyConfirmation = false
+    @State private var exportConfirmation = false
     @State private var newFavName = ""
     @State private var newFavPlaceId = ""
+    @State private var showRobloxLog = false
 
     var body: some View {
         ZStack {
@@ -1529,17 +1531,33 @@ struct ContentView: View {
                     }
                 }
 
-                if let ping = viewModel.logWatcher.currentPing {
-                    HStack(spacing: 8) {
-                        Image(systemName: "antenna.radiowaves.left.and.right")
-                            .font(.system(size: 11))
-                            .foregroundStyle(pingColor(ping))
-                        Text(ping)
-                            .font(.system(size: 13, weight: .bold, design: .monospaced))
-                            .foregroundStyle(pingColor(ping))
-                        Text("ping")
-                            .font(.system(size: 10, weight: .medium, design: .rounded))
-                            .foregroundStyle(.white.opacity(0.4))
+                HStack(spacing: 16) {
+                    if let ping = viewModel.logWatcher.currentPing {
+                        HStack(spacing: 6) {
+                            Image(systemName: "antenna.radiowaves.left.and.right")
+                                .font(.system(size: 11))
+                                .foregroundStyle(pingColor(ping))
+                            Text(ping)
+                                .font(.system(size: 13, weight: .bold, design: .monospaced))
+                                .foregroundStyle(pingColor(ping))
+                            Text("ping")
+                                .font(.system(size: 10, weight: .medium, design: .rounded))
+                                .foregroundStyle(.white.opacity(0.4))
+                        }
+                    }
+
+                    if let fps = viewModel.logWatcher.currentFPS {
+                        HStack(spacing: 6) {
+                            Image(systemName: "gauge.high")
+                                .font(.system(size: 11))
+                                .foregroundStyle(fpsColor(fps))
+                            Text(fps)
+                                .font(.system(size: 13, weight: .bold, design: .monospaced))
+                                .foregroundStyle(fpsColor(fps))
+                            Text("FPS")
+                                .font(.system(size: 10, weight: .medium, design: .rounded))
+                                .foregroundStyle(.white.opacity(0.4))
+                        }
                     }
                 }
 
@@ -1922,12 +1940,41 @@ struct ContentView: View {
     private var logCard: some View {
         glassCard {
             VStack(alignment: .leading, spacing: 14) {
-                HStack {
-                    sectionTitle("Session Log")
+                HStack(spacing: 0) {
+                    Button {
+                        showRobloxLog = false
+                    } label: {
+                        Text("Session Log")
+                            .font(.system(size: 12, weight: showRobloxLog ? .medium : .bold, design: .rounded))
+                            .foregroundStyle(showRobloxLog ? .white.opacity(0.4) : .white)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(
+                                Capsule().fill(showRobloxLog ? Color.clear : Color.white.opacity(0.1))
+                            )
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        showRobloxLog = true
+                    } label: {
+                        Text("Roblox Log")
+                            .font(.system(size: 12, weight: showRobloxLog ? .bold : .medium, design: .rounded))
+                            .foregroundStyle(showRobloxLog ? .white : .white.opacity(0.4))
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(
+                                Capsule().fill(showRobloxLog ? Color.white.opacity(0.1) : Color.clear)
+                            )
+                    }
+                    .buttonStyle(.plain)
 
                     Spacer()
 
-                    Text("\(viewModel.logs.count) lines")
+                    let lineCount = showRobloxLog
+                        ? viewModel.logWatcher.robloxLogLines.count
+                        : viewModel.logs.count
+                    Text("\(lineCount) lines")
                         .font(.system(size: 11, weight: .medium, design: .monospaced))
                         .foregroundStyle(.white.opacity(0.4))
 
@@ -1953,40 +2000,144 @@ struct ContentView: View {
                     }
                     .buttonStyle(.plain)
                     .disabled(viewModel.logs.isEmpty)
+
+                    Button {
+                        viewModel.exportLogs()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "square.and.arrow.up")
+                            Text("Export")
+                        }
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.5))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(
+                            Capsule()
+                                .fill(Color.white.opacity(0.08))
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(viewModel.logs.isEmpty)
                 }
 
-                ScrollViewReader { proxy in
-                    ScrollView {
-                        LazyVStack(alignment: .leading, spacing: 6) {
-                            ForEach(Array(displayLines.enumerated()), id: \.offset) { index, line in
-                                Text(line)
-                                    .font(.system(size: 12, weight: .medium, design: .monospaced))
-                                    .foregroundStyle(logColor(for: line, index: index))
-                                    .textSelection(.enabled)
-                                    .id(index)
-                            }
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(14)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(Color.black.opacity(0.25))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                    .stroke(Color.white.opacity(0.06), lineWidth: 1)
-                            )
-                    )
-                    .onChange(of: viewModel.logs.count) { _ in
-                        if let last = viewModel.logs.indices.last {
-                            withAnimation { proxy.scrollTo(last, anchor: .bottom) }
-                        }
-                    }
+                if showRobloxLog {
+                    robloxLogView
+                } else {
+                    sessionLogView
+                }
+
+                HStack(spacing: 16) {
+                    hotkeyHint(keys: "Cmd+Shift+S", label: "Toggle Session")
+                    hotkeyHint(keys: "Cmd+Shift+H", label: "Server Hop")
+                    hotkeyHint(keys: "Cmd+Shift+O", label: "Overlay")
+                    hotkeyHint(keys: "Cmd+Shift+E", label: "Export")
                 }
             }
         }
         .frame(maxHeight: .infinity)
+    }
+
+    private var sessionLogView: some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 6) {
+                    ForEach(Array(displayLines.enumerated()), id: \.offset) { index, line in
+                        Text(line)
+                            .font(.system(size: 12, weight: .medium, design: .monospaced))
+                            .foregroundStyle(logColor(for: line, index: index))
+                            .textSelection(.enabled)
+                            .id(index)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(14)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color.black.opacity(0.25))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                    )
+            )
+            .onChange(of: viewModel.logs.count) { _ in
+                if let last = viewModel.logs.indices.last {
+                    withAnimation { proxy.scrollTo(last, anchor: .bottom) }
+                }
+            }
+        }
+    }
+
+    private var robloxLogView: some View {
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 4) {
+                    let lines = viewModel.logWatcher.robloxLogLines
+                    if lines.isEmpty {
+                        Text("No Roblox log data yet. Start a session to begin watching.")
+                            .font(.system(size: 12, weight: .medium, design: .monospaced))
+                            .foregroundStyle(.white.opacity(0.4))
+                    } else {
+                        ForEach(Array(lines.enumerated()), id: \.offset) { index, line in
+                            Text(line)
+                                .font(.system(size: 11, weight: .regular, design: .monospaced))
+                                .foregroundStyle(robloxLogColor(for: line))
+                                .textSelection(.enabled)
+                                .id(index)
+                        }
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(14)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .fill(Color(red: 0.05, green: 0.02, blue: 0.08).opacity(0.4))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .stroke(Color.purple.opacity(0.1), lineWidth: 1)
+                    )
+            )
+            .onChange(of: viewModel.logWatcher.robloxLogLines.count) { _ in
+                let lines = viewModel.logWatcher.robloxLogLines
+                if let last = lines.indices.last {
+                    withAnimation { proxy.scrollTo(last, anchor: .bottom) }
+                }
+            }
+        }
+    }
+
+    private func hotkeyHint(keys: String, label: String) -> some View {
+        HStack(spacing: 4) {
+            Text(keys)
+                .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                .foregroundStyle(.white.opacity(0.25))
+                .padding(.horizontal, 5)
+                .padding(.vertical, 2)
+                .background(
+                    RoundedRectangle(cornerRadius: 4, style: .continuous)
+                        .fill(Color.white.opacity(0.06))
+                )
+            Text(label)
+                .font(.system(size: 9, weight: .medium, design: .rounded))
+                .foregroundStyle(.white.opacity(0.2))
+        }
+    }
+
+    private func robloxLogColor(for line: String) -> Color {
+        if line.localizedCaseInsensitiveContains("error") || line.localizedCaseInsensitiveContains("fail") {
+            return Color(red: 1.0, green: 0.5, blue: 0.5).opacity(0.9)
+        }
+        if line.localizedCaseInsensitiveContains("warn") {
+            return Color(red: 1.0, green: 0.82, blue: 0.4).opacity(0.8)
+        }
+        if line.localizedCaseInsensitiveContains("joining") || line.localizedCaseInsensitiveContains("connected") {
+            return Color(red: 0.5, green: 0.9, blue: 0.6).opacity(0.9)
+        }
+        return .white.opacity(0.55)
     }
 
     // MARK: - Splash
@@ -2088,6 +2239,13 @@ extension ContentView {
         if ms < 50 { return .green }
         if ms < 100 { return .yellow }
         if ms < 200 { return .orange }
+        return .red
+    }
+
+    private func fpsColor(_ fps: String) -> Color {
+        guard let val = Int(fps) else { return .white }
+        if val >= 55 { return .green }
+        if val >= 30 { return .yellow }
         return .red
     }
 

@@ -14,11 +14,13 @@ final class RobloxLogWatcher: ObservableObject {
     @Published var currentFPS: String?
     @Published var currentMemory: String?
     @Published var watcherStatus: String = "idle"
+    @Published var robloxLogLines: [String] = []
 
     private var watchTask: Task<Void, Never>?
     private var lastFileOffset: UInt64 = 0
     private var logFileURL: URL?
     private var lastLogFileName: String?
+    private let maxRobloxLogLines = 500
 
     private static var logDirectory: URL {
         FileManager.default.homeDirectoryForCurrentUser
@@ -177,6 +179,14 @@ final class RobloxLogWatcher: ObservableObject {
     }
 
     private func parseLine(_ line: String) {
+        let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+
+        if robloxLogLines.count >= maxRobloxLogLines {
+            robloxLogLines.removeFirst(robloxLogLines.count - maxRobloxLogLines + 1)
+        }
+        robloxLogLines.append(trimmed)
+
         if line.contains("Joining game") || line.contains("joining game") {
             if let range = line.range(of: "place (\\d+)", options: .regularExpression) {
                 let placeStr = line[range].replacingOccurrences(of: "place ", with: "")
@@ -199,10 +209,6 @@ final class RobloxLogWatcher: ObservableObject {
             }
         }
 
-        // Only detect real game exits — MegaReplicator destruction
-        // is the reliable indicator that the player left the game server.
-        // Client:Disconnect fires for secondary connections (SignalR, WebSocket)
-        // even while the player is still in-game.
         if line.contains("Destroying MegaReplicator") {
             isInGame = false
             disconnected = true
@@ -218,7 +224,6 @@ final class RobloxLogWatcher: ObservableObject {
             disconnected = false
         }
 
-        // Memory from AppMemUsageStatus (value in bytes)
         if line.contains("AppMemUsageStatus") {
             if let range = line.range(of: #"\]\s+([\d.]+)"#, options: .regularExpression) {
                 let matched = String(line[range])
@@ -233,6 +238,30 @@ final class RobloxLogWatcher: ObservableObject {
                 }
             }
         }
+
+        if let range = line.range(of: #"FPS:\s*([\d.]+)"#, options: .regularExpression) {
+            let matched = String(line[range])
+            if let numRange = matched.range(of: #"[\d.]+"#, options: .regularExpression) {
+                let fpsStr = String(matched[numRange])
+                if let fps = Double(fpsStr), fps > 0, fps < 10000 {
+                    currentFPS = "\(Int(fps.rounded()))"
+                }
+            }
+        } else if line.contains("GraphicsFrameRateManager") || line.contains("FrameRate") {
+            if let range = line.range(of: #"(\d{1,4})\s*fps"#, options: [.regularExpression, .caseInsensitive]) {
+                let matched = String(line[range])
+                if let numRange = matched.range(of: #"\d+"#, options: .regularExpression) {
+                    let fpsStr = String(matched[numRange])
+                    if let fps = Int(fpsStr), fps > 0, fps < 10000 {
+                        currentFPS = "\(fps)"
+                    }
+                }
+            }
+        }
+    }
+
+    var currentLogFilePath: String? {
+        logFileURL?.path
     }
 
     private func resolveGameName(placeId: String) {
