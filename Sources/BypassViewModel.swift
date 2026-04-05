@@ -587,21 +587,52 @@ final class BypassViewModel: ObservableObject {
 
         var bundle: [String: Any] = [:]
 
-        if let data = try? Data(contentsOf: settingsURL),
+        // Use in-memory data instead of reading from disk
+        let settingsPayload = StoredSettings(
+            robloxAppPath: robloxAppPath,
+            customSpoofdpiPath: customSpoofdpiPath,
+            preset: preset,
+            proxyScope: proxyScope,
+            hybridLaunch: hybridLaunch,
+            dnsHttpsURL: dnsHttpsURL,
+            httpsChunkSize: httpsChunkSize,
+            httpsDisorder: httpsDisorder,
+            appLaunchDelay: appLaunchDelay,
+            reducedMotion: reducedMotion,
+            fpsTarget: fpsTarget,
+            accentColorHex: accentColorHex,
+            updateChannel: updateChannel,
+            menuBarMode: menuBarMode,
+            versionPinEnabled: versionPinEnabled,
+            autoRejoinEnabled: autoRejoinEnabled,
+            dnsPreCacheEnabled: dnsPreCacheEnabled,
+            processBoostEnabled: processBoostEnabled
+        )
+
+        let encoder = JSONEncoder()
+        if let data = try? encoder.encode(settingsPayload),
            let json = try? JSONSerialization.jsonObject(with: data) {
             bundle["settings"] = json
         }
 
-        let supportDir = settingsURL.deletingLastPathComponent()
-        for file in ["favorites.json", "mods_settings.json", "game_history.json"] {
-            let fileURL = supportDir.appendingPathComponent(file)
-            if let data = try? Data(contentsOf: fileURL),
-               let json = try? JSONSerialization.jsonObject(with: data) {
-                bundle[file.replacingOccurrences(of: ".json", with: "")] = json
-            }
+        // Map in-memory states for other components
+        if let data = try? encoder.encode(favorites),
+           let json = try? JSONSerialization.jsonObject(with: data) {
+            bundle["favorites"] = json
         }
 
-        if let ffData = try? JSONEncoder().encode(fastFlagsManager.flags) {
+        let modsPayload: [String: Any] = [
+            "isEnabled": modsManager.isEnabled,
+            "mods": (try? JSONSerialization.jsonObject(with: encoder.encode(modsManager.installedMods))) ?? []
+        ]
+        bundle["mods_settings"] = modsPayload
+
+        if let data = try? encoder.encode(gameHistory.sessions),
+           let json = try? JSONSerialization.jsonObject(with: data) {
+            bundle["game_history"] = json
+        }
+
+        if let ffData = try? encoder.encode(fastFlagsManager.flags) {
             bundle["fastflags"] = try? JSONSerialization.jsonObject(with: ffData)
         }
 
