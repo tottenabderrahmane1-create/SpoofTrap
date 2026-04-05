@@ -1846,7 +1846,7 @@ struct ContentView: View {
                                         .foregroundStyle(.white.opacity(0.4))
                                     Text("·")
                                         .foregroundStyle(.white.opacity(0.3))
-                                    Text(formatDuration(session.duration))
+                                    Text(session.duration.formatDuration())
                                         .font(.system(size: 9, weight: .medium, design: .rounded))
                                         .foregroundStyle(.white.opacity(0.4))
                                 }
@@ -1870,11 +1870,6 @@ struct ContentView: View {
         .transition(.opacity.combined(with: .move(edge: .top)))
     }
 
-    private func formatDuration(_ duration: TimeInterval) -> String {
-        let mins = Int(duration) / 60
-        if mins < 60 { return "\(mins)m" }
-        return "\(mins / 60)h \(mins % 60)m"
-    }
 
     private func formatDate(_ date: Date) -> String {
         let formatter = RelativeDateTimeFormatter()

@@ -25,17 +25,7 @@ struct SessionRecord: Codable, Identifiable {
     }
     
     var durationFormatted: String {
-        let hours = Int(duration) / 3600
-        let minutes = (Int(duration) % 3600) / 60
-        let seconds = Int(duration) % 60
-        
-        if hours > 0 {
-            return String(format: "%dh %dm %ds", hours, minutes, seconds)
-        } else if minutes > 0 {
-            return String(format: "%dm %ds", minutes, seconds)
-        } else {
-            return String(format: "%ds", seconds)
-        }
+        duration.formatDuration(includeSeconds: true)
     }
 }
 
@@ -74,7 +64,7 @@ final class SessionStats: ObservableObject {
     }
     
     var totalPlayTimeFormatted: String {
-        formatDuration(totalPlayTime)
+        totalPlayTime.formatDuration(useLessThanOne: true)
     }
     
     var todaySessions: Int {
@@ -92,7 +82,7 @@ final class SessionStats: ObservableObject {
     }
     
     var todayPlayTimeFormatted: String {
-        formatDuration(todayPlayTime)
+        todayPlayTime.formatDuration(useLessThanOne: true)
     }
     
     var weekSessions: Int {
@@ -107,7 +97,7 @@ final class SessionStats: ObservableObject {
     }
     
     var averageSessionFormatted: String {
-        formatDuration(averageSessionLength)
+        averageSessionLength.formatDuration(useLessThanOne: true)
     }
     
     func startSession(proxyMode: String, preset: String) {
@@ -146,18 +136,6 @@ final class SessionStats: ObservableObject {
         saveHistory()
     }
     
-    private func formatDuration(_ duration: TimeInterval) -> String {
-        let hours = Int(duration) / 3600
-        let minutes = (Int(duration) % 3600) / 60
-        
-        if hours > 0 {
-            return String(format: "%dh %dm", hours, minutes)
-        } else if minutes > 0 {
-            return String(format: "%dm", minutes)
-        } else {
-            return "< 1m"
-        }
-    }
     
     private func calculateStats() {
         totalSessions = sessionHistory.count
