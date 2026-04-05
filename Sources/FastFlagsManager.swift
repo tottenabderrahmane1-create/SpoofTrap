@@ -285,13 +285,87 @@ final class FastFlagsManager: ObservableObject {
     }
 }
 
-private struct SavedFastFlags: Codable {
+struct SavedFastFlags: Codable {
     let isEnabled: Bool
     let flags: [SavedFlag]
 }
 
-private struct SavedFlag: Codable {
+struct SavedFlag: Codable {
     let id: String
     let isEnabled: Bool
     let value: String
+}
+
+// MARK: - FastFlag Profiles
+
+struct FastFlagProfile: Identifiable, Codable {
+    let id: String
+    var name: String
+    var flags: [SavedFlag]
+    var createdAt: Date
+}
+
+@MainActor
+final class FastFlagProfileManager: ObservableObject {
+    @Published var profiles: [FastFlagProfile] = []
+
+    private let fm = FileManager.default
+
+    private var storageURL: URL {
+        let appSupport = fm.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? fm.homeDirectoryForCurrentUser.appendingPathComponent("Library/Application Support")
+        return appSupport
+            .appendingPathComponent("SpoofTrap", isDirectory: true)
+            .appendingPathComponent("fastflag_profiles.json")
+    }
+
+    init() {
+        loadProfiles()
+    }
+
+    func saveCurrentAsProfile(name: String, flags: [FastFlag]) {
+        let saved = flags.filter { $0.isEnabled }.map { SavedFlag(id: $0.id, isEnabled: $0.isEnabled, value: $0.value) }
+        let profile = FastFlagProfile(id: UUID().uuidString, name: name, flags: saved, createdAt: Date())
+        profiles.insert(profile, at: 0)
+        persistProfiles()
+    }
+
+    func deleteProfile(_ profile: FastFlagProfile) {
+        profiles.removeAll { $0.id == profile.id }
+        persistProfiles()
+    }
+
+    func renameProfile(_ profile: FastFlagProfile, to newName: String) {
+        guard let idx = profiles.firstIndex(where: { $0.id == profile.id }) else { return }
+        profiles[idx].name = newName
+        persistProfiles()
+    }
+
+    func applyProfile(_ profile: FastFlagProfile, to manager: FastFlagsManager) {
+        for i in manager.flags.indices {
+            manager.flags[i].isEnabled = false
+        }
+
+        for saved in profile.flags {
+            if let idx = manager.flags.firstIndex(where: { $0.id == saved.id }) {
+                manager.flags[idx].isEnabled = saved.isEnabled
+                manager.flags[idx].value = saved.value
+            }
+        }
+        manager.selectedPreset = .none
+    }
+
+    private func loadProfiles() {
+        guard let data = try? Data(contentsOf: storageURL),
+              let saved = try? JSONDecoder().decode([FastFlagProfile].self, from: data) else { return }
+        profiles = saved
+    }
+
+    private func persistProfiles() {
+        do {
+            try fm.createDirectory(at: storageURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+            let data = try JSONEncoder().encode(profiles)
+            try data.write(to: storageURL, options: .atomic)
+        } catch {}
+    }
 }

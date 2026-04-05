@@ -5,6 +5,7 @@ struct FavoriteGame: Identifiable, Codable, Equatable {
     var name: String
     var placeId: String
     var addedAt: Date
+    var thumbnailURL: String?
 
     var deepLinkURL: URL? {
         URL(string: "roblox://placeId=\(placeId)")

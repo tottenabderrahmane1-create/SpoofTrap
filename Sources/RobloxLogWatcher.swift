@@ -15,6 +15,15 @@ final class RobloxLogWatcher: ObservableObject {
     @Published var currentMemory: String?
     @Published var watcherStatus: String = "idle"
     @Published var robloxLogLines: [String] = []
+    @Published var playerEvents: [PlayerEvent] = []
+
+    struct PlayerEvent: Identifiable {
+        let id = UUID()
+        let timestamp: Date
+        let playerName: String
+        let action: Action
+        enum Action: String { case joined, left }
+    }
 
     private var watchTask: Task<Void, Never>?
     private var lastFileOffset: UInt64 = 0
@@ -256,6 +265,36 @@ final class RobloxLogWatcher: ObservableObject {
                         currentFPS = "\(fps)"
                     }
                 }
+            }
+        }
+
+        // Player join/leave detection
+        if let joinRange = trimmed.range(of: #"([\w\d_]+) has joined"#, options: .regularExpression) {
+            let joinMatch = String(trimmed[joinRange])
+            let playerName = joinMatch.replacingOccurrences(of: " has joined", with: "")
+            if !playerName.isEmpty && playerName.count < 30 {
+                let event = PlayerEvent(timestamp: Date(), playerName: playerName, action: .joined)
+                playerEvents.append(event)
+                if playerEvents.count > 200 { playerEvents.removeFirst(playerEvents.count - 200) }
+            }
+        }
+
+        if let leftRange = trimmed.range(of: #"([\w\d_]+) has left"#, options: .regularExpression) {
+            let leftMatch = String(trimmed[leftRange])
+            let playerName = leftMatch.replacingOccurrences(of: " has left", with: "")
+            if !playerName.isEmpty && playerName.count < 30 {
+                let event = PlayerEvent(timestamp: Date(), playerName: playerName, action: .left)
+                playerEvents.append(event)
+                if playerEvents.count > 200 { playerEvents.removeFirst(playerEvents.count - 200) }
+            }
+        }
+
+        if trimmed.contains("removing player") {
+            if let rmRange = trimmed.range(of: #"removing player (\d+)"#, options: .regularExpression) {
+                let rmMatch = String(trimmed[rmRange]).replacingOccurrences(of: "removing player ", with: "Player#")
+                let event = PlayerEvent(timestamp: Date(), playerName: rmMatch, action: .left)
+                playerEvents.append(event)
+                if playerEvents.count > 200 { playerEvents.removeFirst(playerEvents.count - 200) }
             }
         }
     }

@@ -8,6 +8,7 @@ struct GameSession: Identifiable, Codable {
     var duration: TimeInterval
     var serverRegion: String
     var preset: String
+    var thumbnailURL: String?
 }
 
 @MainActor

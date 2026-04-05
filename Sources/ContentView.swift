@@ -17,6 +17,11 @@ struct ContentView: View {
     @State private var newFavName = ""
     @State private var newFavPlaceId = ""
     @State private var showRobloxLog = false
+    @State private var showGameSearch = false
+    @State private var showCacheCleaner = false
+    @State private var showFFProfiles = false
+    @State private var showPlayerTracker = false
+    @State private var newProfileName = ""
 
     var body: some View {
         ZStack {
@@ -67,6 +72,7 @@ struct ContentView: View {
                 
                 if showingFastFlags {
                     fastFlagsDetailCard
+                    ffProfilesCard
                 }
                 
                 modsCard
@@ -80,6 +86,14 @@ struct ContentView: View {
                 if showingFavorites {
                     favoritesDetailCard
                 }
+
+                gameSearchCard
+
+                if showGameSearch {
+                    gameSearchResultsCard
+                }
+
+                cacheCleanerCard
                 
                 if showingAdvanced && viewModel.proManager.isPro {
                     advancedCard
@@ -1454,7 +1468,29 @@ struct ContentView: View {
                 if !viewModel.favorites.isEmpty {
                     Divider().background(Color.white.opacity(0.1))
                     ForEach(viewModel.favorites) { fav in
-                        HStack {
+                        HStack(spacing: 10) {
+                            if let thumbStr = fav.thumbnailURL, let thumbURL = URL(string: thumbStr) {
+                                AsyncImage(url: thumbURL) { phase in
+                                    switch phase {
+                                    case .success(let image):
+                                        image.resizable().aspectRatio(contentMode: .fill)
+                                    default:
+                                        RoundedRectangle(cornerRadius: 6).fill(Color.white.opacity(0.1))
+                                    }
+                                }
+                                .frame(width: 36, height: 36)
+                                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                            } else {
+                                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                    .fill(Color.white.opacity(0.06))
+                                    .frame(width: 36, height: 36)
+                                    .overlay(
+                                        Image(systemName: "gamecontroller")
+                                            .font(.system(size: 14))
+                                            .foregroundStyle(.white.opacity(0.2))
+                                    )
+                            }
+
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(fav.name)
                                     .font(.system(size: 12, weight: .semibold, design: .rounded))
@@ -1464,6 +1500,18 @@ struct ContentView: View {
                                     .foregroundStyle(.white.opacity(0.4))
                             }
                             Spacer()
+
+                            if viewModel.isRunning {
+                                Button {
+                                    if let url = fav.deepLinkURL { NSWorkspace.shared.open(url) }
+                                } label: {
+                                    Image(systemName: "play.fill")
+                                        .font(.system(size: 10))
+                                        .foregroundStyle(.green)
+                                }
+                                .buttonStyle(.plain)
+                            }
+
                             Button {
                                 viewModel.removeFavorite(fav)
                             } label: {
@@ -1654,6 +1702,85 @@ struct ContentView: View {
                     }
                     .foregroundStyle(.yellow.opacity(0.6))
                 }
+
+                Button {
+                    withAnimation(.spring(response: 0.3)) { showPlayerTracker.toggle() }
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "person.2.fill")
+                            .font(.system(size: 11))
+                        Text(showPlayerTracker ? "Hide Player Tracker" : "Player Tracker")
+                            .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        if !viewModel.logWatcher.playerEvents.isEmpty {
+                            Text("\(viewModel.logWatcher.playerEvents.count)")
+                                .font(.system(size: 9, weight: .bold, design: .monospaced))
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 5)
+                                .padding(.vertical, 2)
+                                .background(Capsule().fill(Color.purple.opacity(0.4)))
+                        }
+                    }
+                    .foregroundStyle(.white.opacity(0.6))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(Color.purple.opacity(showPlayerTracker ? 0.2 : 0.1))
+                    )
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .transition(.opacity.combined(with: .move(edge: .top)))
+    }
+
+    // MARK: - Player Tracker Card
+
+    private var playerTrackerCard: some View {
+        glassCard {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 8) {
+                    Image(systemName: "person.2.fill")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.purple)
+                    Text("Player Activity")
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                    Spacer()
+                    Text("\(viewModel.logWatcher.playerEvents.count) events")
+                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        .foregroundStyle(.white.opacity(0.3))
+                }
+
+                let events = viewModel.logWatcher.playerEvents.suffix(20).reversed()
+                if events.isEmpty {
+                    Text("No player activity detected yet")
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.4))
+                } else {
+                    ScrollView {
+                        LazyVStack(alignment: .leading, spacing: 6) {
+                            ForEach(Array(events)) { event in
+                                HStack(spacing: 8) {
+                                    Image(systemName: event.action == .joined ? "arrow.right.circle.fill" : "arrow.left.circle.fill")
+                                        .font(.system(size: 10))
+                                        .foregroundStyle(event.action == .joined ? .green : .red)
+                                    Text(event.playerName)
+                                        .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                                        .foregroundStyle(.white)
+                                    Spacer()
+                                    Text(event.action.rawValue)
+                                        .font(.system(size: 9, weight: .medium, design: .rounded))
+                                        .foregroundStyle(event.action == .joined ? .green.opacity(0.7) : .red.opacity(0.7))
+                                    Text(event.timestamp, style: .time)
+                                        .font(.system(size: 9, weight: .medium, design: .monospaced))
+                                        .foregroundStyle(.white.opacity(0.3))
+                                }
+                            }
+                        }
+                    }
+                    .frame(maxHeight: 180)
+                }
             }
         }
         .transition(.opacity.combined(with: .move(edge: .top)))
@@ -1695,6 +1822,19 @@ struct ContentView: View {
                 } else {
                     ForEach(displaySessions) { session in
                         HStack(spacing: 10) {
+                            if let thumbStr = session.thumbnailURL, let thumbURL = URL(string: thumbStr) {
+                                AsyncImage(url: thumbURL) { phase in
+                                    switch phase {
+                                    case .success(let image):
+                                        image.resizable().aspectRatio(contentMode: .fill)
+                                    default:
+                                        RoundedRectangle(cornerRadius: 6).fill(Color.white.opacity(0.1))
+                                    }
+                                }
+                                .frame(width: 32, height: 32)
+                                .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                            }
+
                             VStack(alignment: .leading, spacing: 2) {
                                 Text(session.gameName)
                                     .font(.system(size: 12, weight: .semibold, design: .rounded))
@@ -1892,6 +2032,9 @@ struct ContentView: View {
             sessionCard
             if viewModel.isRunning {
                 liveInfoCard
+                if showPlayerTracker {
+                    playerTrackerCard
+                }
             }
             logCard
         }
@@ -2138,6 +2281,416 @@ struct ContentView: View {
             return Color(red: 0.5, green: 0.9, blue: 0.6).opacity(0.9)
         }
         return .white.opacity(0.55)
+    }
+
+    // MARK: - Game Search Card
+
+    private var gameSearchCard: some View {
+        glassCard {
+            VStack(alignment: .leading, spacing: 10) {
+                Button {
+                    withAnimation(.spring(response: 0.3)) { showGameSearch.toggle() }
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.cyan)
+                        Text("Game Search")
+                            .font(.system(size: 14, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white)
+                        Spacer()
+                        Image(systemName: showGameSearch ? "chevron.up" : "chevron.down")
+                            .font(.system(size: 11, weight: .semibold))
+                            .foregroundStyle(.white.opacity(0.3))
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+
+                if !showGameSearch {
+                    Text("Search and launch Roblox games directly")
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.4))
+                }
+            }
+        }
+    }
+
+    private var gameSearchResultsCard: some View {
+        glassCard {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack(spacing: 8) {
+                    TextField("Search games...", text: $viewModel.gameSearch.query)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 13, weight: .medium, design: .rounded))
+                        .foregroundStyle(.white)
+                        .padding(10)
+                        .background(
+                            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                .fill(Color.white.opacity(0.08))
+                        )
+                        .onSubmit { viewModel.gameSearch.search() }
+
+                    Button {
+                        viewModel.gameSearch.search()
+                    } label: {
+                        Image(systemName: "magnifyingglass")
+                            .font(.system(size: 13, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .padding(10)
+                            .background(
+                                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                                    .fill(Color.cyan.opacity(0.25))
+                            )
+                    }
+                    .buttonStyle(.plain)
+
+                    if !viewModel.gameSearch.query.isEmpty {
+                        Button {
+                            viewModel.gameSearch.clear()
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.system(size: 14))
+                                .foregroundStyle(.white.opacity(0.4))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
+                if viewModel.gameSearch.isSearching {
+                    HStack {
+                        ProgressView()
+                            .controlSize(.small)
+                        Text("Searching...")
+                            .font(.system(size: 11, weight: .medium, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.5))
+                    }
+                } else if let error = viewModel.gameSearch.errorMessage {
+                    HStack(spacing: 6) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.orange)
+                        Text(error)
+                            .font(.system(size: 11, weight: .medium, design: .rounded))
+                            .foregroundStyle(.orange.opacity(0.8))
+                    }
+                } else if viewModel.gameSearch.results.isEmpty && !viewModel.gameSearch.query.isEmpty {
+                    Text("No results found")
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.4))
+                }
+
+                if viewModel.gameSearch.proxyPort == nil {
+                    HStack(spacing: 5) {
+                        Image(systemName: "info.circle")
+                            .font(.system(size: 9))
+                        Text("Start a session to route searches through the bypass")
+                            .font(.system(size: 10, weight: .medium, design: .rounded))
+                    }
+                    .foregroundStyle(.yellow.opacity(0.5))
+                }
+
+                ScrollView {
+                    LazyVStack(spacing: 8) {
+                        ForEach(viewModel.gameSearch.results) { game in
+                            gameSearchRow(game)
+                        }
+                    }
+                }
+                .frame(maxHeight: 300)
+            }
+        }
+        .transition(.opacity.combined(with: .move(edge: .top)))
+    }
+
+    private func gameSearchRow(_ game: GameSearchResult) -> some View {
+        HStack(spacing: 10) {
+            if let thumbURL = game.thumbnailURL {
+                AsyncImage(url: thumbURL) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image.resizable().aspectRatio(contentMode: .fill)
+                    default:
+                        RoundedRectangle(cornerRadius: 8).fill(Color.white.opacity(0.1))
+                    }
+                }
+                .frame(width: 44, height: 44)
+                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+            } else {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .fill(Color.white.opacity(0.1))
+                    .frame(width: 44, height: 44)
+                    .overlay(
+                        Image(systemName: "gamecontroller.fill")
+                            .font(.system(size: 16))
+                            .foregroundStyle(.white.opacity(0.3))
+                    )
+            }
+
+            VStack(alignment: .leading, spacing: 3) {
+                Text(game.name)
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+                HStack(spacing: 8) {
+                    HStack(spacing: 3) {
+                        Image(systemName: "person.fill")
+                            .font(.system(size: 8))
+                        Text(formatPlayerCount(game.playerCount))
+                            .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    }
+                    .foregroundStyle(.cyan.opacity(0.8))
+
+                    if let rating = game.rating {
+                        HStack(spacing: 3) {
+                            Image(systemName: "hand.thumbsup.fill")
+                                .font(.system(size: 8))
+                            Text("\(rating)%")
+                                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        }
+                        .foregroundStyle(rating >= 80 ? .green.opacity(0.8) : rating >= 50 ? .yellow.opacity(0.8) : .red.opacity(0.8))
+                    }
+
+                    Text(game.creatorName)
+                        .font(.system(size: 9, weight: .medium, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.3))
+                        .lineLimit(1)
+                }
+            }
+
+            Spacer()
+
+            VStack(spacing: 4) {
+                Button {
+                    if viewModel.isRunning {
+                        if let url = URL(string: "roblox://placeId=\(game.placeId)") {
+                            NSWorkspace.shared.open(url)
+                        }
+                    }
+                } label: {
+                    Image(systemName: "play.fill")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.white)
+                        .padding(8)
+                        .background(Circle().fill(Color.green.opacity(viewModel.isRunning ? 0.3 : 0.1)))
+                }
+                .buttonStyle(.plain)
+                .disabled(!viewModel.isRunning)
+
+                Button {
+                    viewModel.addFavorite(name: game.name, placeId: String(game.placeId))
+                } label: {
+                    Image(systemName: "star")
+                        .font(.system(size: 10))
+                        .foregroundStyle(.yellow.opacity(0.6))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(10)
+        .background(
+            RoundedRectangle(cornerRadius: 12, style: .continuous)
+                .fill(Color.white.opacity(0.04))
+        )
+    }
+
+    private func formatPlayerCount(_ count: Int) -> String {
+        if count >= 1_000_000 { return String(format: "%.1fM", Double(count) / 1_000_000) }
+        if count >= 1_000 { return String(format: "%.1fK", Double(count) / 1_000) }
+        return "\(count)"
+    }
+
+    // MARK: - Cache Cleaner Card
+
+    private var cacheCleanerCard: some View {
+        glassCard {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 8) {
+                    Image(systemName: "trash.circle.fill")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.orange)
+                    Text("Cache Cleaner")
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                    Spacer()
+
+                    Button {
+                        viewModel.cacheCleaner.scan()
+                    } label: {
+                        Text("Scan")
+                            .font(.system(size: 10, weight: .semibold, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.6))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(Capsule().fill(Color.white.opacity(0.08)))
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                if viewModel.cacheCleaner.cacheInfo.totalSize > 0 {
+                    HStack(spacing: 12) {
+                        cacheStatPill(label: "Logs", value: CacheCleanerManager.formatBytes(viewModel.cacheCleaner.cacheInfo.logsSize), count: viewModel.cacheCleaner.cacheInfo.logsCount, color: .blue)
+                        cacheStatPill(label: "Cache", value: CacheCleanerManager.formatBytes(viewModel.cacheCleaner.cacheInfo.cacheSize), count: viewModel.cacheCleaner.cacheInfo.cacheCount, color: .purple)
+                        cacheStatPill(label: "Temp", value: CacheCleanerManager.formatBytes(viewModel.cacheCleaner.cacheInfo.tempSize), count: viewModel.cacheCleaner.cacheInfo.tempCount, color: .orange)
+                    }
+
+                    HStack(spacing: 8) {
+                        Text("Total: \(CacheCleanerManager.formatBytes(viewModel.cacheCleaner.cacheInfo.totalSize))")
+                            .font(.system(size: 12, weight: .bold, design: .monospaced))
+                            .foregroundStyle(.white)
+
+                        Spacer()
+
+                        Button {
+                            let result = viewModel.cacheCleaner.cleanAll()
+                            viewModel.appendLogPublic("Cache cleaned: \(result.files) files, \(CacheCleanerManager.formatBytes(result.freed)) freed")
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "trash.fill")
+                                    .font(.system(size: 10))
+                                Text("Clean All")
+                                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                            }
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .fill(Color.red.opacity(0.25))
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .disabled(viewModel.isRunning)
+                    }
+
+                    if viewModel.cacheCleaner.lastFreedBytes > 0 {
+                        Text("Last cleaned: \(CacheCleanerManager.formatBytes(viewModel.cacheCleaner.lastFreedBytes)) freed")
+                            .font(.system(size: 10, weight: .medium, design: .rounded))
+                            .foregroundStyle(.green.opacity(0.6))
+                    }
+                } else {
+                    Text("Tap Scan to check Roblox cache size")
+                        .font(.system(size: 11, weight: .medium, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.4))
+                }
+            }
+        }
+        .onAppear { viewModel.cacheCleaner.scan() }
+    }
+
+    private func cacheStatPill(label: String, value: String, count: Int, color: Color) -> some View {
+        VStack(spacing: 3) {
+            Text(value)
+                .font(.system(size: 11, weight: .bold, design: .monospaced))
+                .foregroundStyle(color)
+            Text("\(count) \(label)")
+                .font(.system(size: 9, weight: .medium, design: .rounded))
+                .foregroundStyle(.white.opacity(0.4))
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 8)
+        .background(
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .fill(color.opacity(0.08))
+        )
+    }
+
+    // MARK: - FastFlag Profiles Card
+
+    private var ffProfilesCard: some View {
+        glassCard {
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 8) {
+                    Image(systemName: "square.stack.3d.up.fill")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.indigo)
+                    Text("Flag Profiles")
+                        .font(.system(size: 14, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                    Spacer()
+                }
+
+                HStack(spacing: 8) {
+                    TextField("Profile name", text: $newProfileName)
+                        .textFieldStyle(.plain)
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundStyle(.white)
+                        .padding(8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .fill(Color.white.opacity(0.08))
+                        )
+
+                    Button {
+                        guard !newProfileName.isEmpty else { return }
+                        viewModel.ffProfiles.saveCurrentAsProfile(name: newProfileName, flags: viewModel.fastFlagsManager.flags)
+                        newProfileName = ""
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "plus")
+                            Text("Save")
+                        }
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 7)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .fill(Color.indigo.opacity(0.3))
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(newProfileName.isEmpty)
+                }
+
+                if viewModel.ffProfiles.profiles.isEmpty {
+                    Text("Save your current flags as a named profile for quick switching")
+                        .font(.system(size: 10, weight: .medium, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.4))
+                } else {
+                    ForEach(viewModel.ffProfiles.profiles) { profile in
+                        HStack(spacing: 8) {
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(profile.name)
+                                    .font(.system(size: 12, weight: .semibold, design: .rounded))
+                                    .foregroundStyle(.white)
+                                Text("\(profile.flags.count) flags")
+                                    .font(.system(size: 9, weight: .medium, design: .monospaced))
+                                    .foregroundStyle(.white.opacity(0.4))
+                            }
+                            Spacer()
+
+                            Button {
+                                viewModel.ffProfiles.applyProfile(profile, to: viewModel.fastFlagsManager)
+                            } label: {
+                                Text("Apply")
+                                    .font(.system(size: 10, weight: .semibold, design: .rounded))
+                                    .foregroundStyle(.cyan)
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(Capsule().fill(Color.cyan.opacity(0.15)))
+                            }
+                            .buttonStyle(.plain)
+
+                            Button {
+                                viewModel.ffProfiles.deleteProfile(profile)
+                            } label: {
+                                Image(systemName: "trash")
+                                    .font(.system(size: 10))
+                                    .foregroundStyle(.red.opacity(0.6))
+                            }
+                            .buttonStyle(.plain)
+                        }
+                        .padding(8)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .fill(Color.white.opacity(0.04))
+                        )
+                    }
+                }
+            }
+        }
+        .transition(.opacity.combined(with: .move(edge: .top)))
     }
 
     // MARK: - Splash

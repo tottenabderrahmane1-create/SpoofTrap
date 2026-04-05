@@ -129,6 +129,11 @@ final class BypassViewModel: ObservableObject {
     @Published var dnsPreCacheEnabled: Bool = true
     @Published var processBoostEnabled: Bool = true
     
+    // New features
+    @Published var gameSearch = GameSearchManager()
+    @Published var cacheCleaner = CacheCleanerManager()
+    @Published var ffProfiles = FastFlagProfileManager()
+    
     // Pro Features
     @Published var proManager = ProManager()
     @Published var sessionStats = SessionStats()
@@ -182,6 +187,9 @@ final class BypassViewModel: ObservableObject {
         forward(menuBarManager)
         forward(perfOverlay)
         forward(gameHistory)
+        forward(gameSearch)
+        forward(cacheCleaner)
+        forward(ffProfiles)
     }
 
     var isRunning: Bool {
@@ -371,9 +379,36 @@ final class BypassViewModel: ObservableObject {
     }
 
     func addFavorite(name: String, placeId: String) {
-        let fav = FavoriteGame(id: UUID().uuidString, name: name, placeId: placeId, addedAt: Date())
+        let fav = FavoriteGame(id: UUID().uuidString, name: name, placeId: placeId, addedAt: Date(), thumbnailURL: nil)
         favorites.append(fav)
         saveFavorites()
+        fetchThumbnailForFavorite(placeId: placeId)
+    }
+
+    func fetchThumbnailForFavorite(placeId: String) {
+        Task {
+            guard let thumb = await Self.fetchGameThumbnail(placeId: placeId) else { return }
+            if let idx = favorites.firstIndex(where: { $0.placeId == placeId && $0.thumbnailURL == nil }) {
+                favorites[idx].thumbnailURL = thumb
+                saveFavorites()
+            }
+        }
+    }
+
+    static func fetchGameThumbnail(placeId: String) async -> String? {
+        guard let detailURL = URL(string: "https://games.roblox.com/v1/games/multiget-place-details?placeIds=\(placeId)") else { return nil }
+        guard let (data, _) = try? await URLSession.shared.data(from: detailURL),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
+              let first = json.first,
+              let universeId = first["universeId"] as? Int else { return nil }
+
+        guard let thumbURL = URL(string: "https://thumbnails.roblox.com/v1/games/icons?universeIds=\(universeId)&returnPolicy=PlaceHolder&size=150x150&format=Png&isCircular=false") else { return nil }
+        guard let (tData, _) = try? await URLSession.shared.data(from: thumbURL),
+              let tJson = try? JSONSerialization.jsonObject(with: tData) as? [String: Any],
+              let items = tJson["data"] as? [[String: Any]],
+              let item = items.first,
+              let imageUrl = item["imageUrl"] as? String else { return nil }
+        return imageUrl
     }
 
     func removeFavorite(_ fav: FavoriteGame) {
@@ -836,6 +871,7 @@ final class BypassViewModel: ObservableObject {
             spoofProcess = nil
             outputPipe = nil
             state = .stopped
+            gameSearch.proxyPort = nil
             appendLog("Bypass stopped.")
         }
     }
@@ -916,6 +952,7 @@ final class BypassViewModel: ObservableObject {
             spoofProcess = process
             outputPipe = pipe
             state = .running
+            gameSearch.proxyPort = 8080
             appendLog("spoofdpi active on \(proxyAddress).")
             sendNotification(title: "SpoofTrap", body: "Session started — proxy active on \(proxyAddress)")
 
@@ -1391,6 +1428,10 @@ final class BypassViewModel: ObservableObject {
         path.replacingOccurrences(of: NSHomeDirectory(), with: "~")
     }
 
+    func appendLogPublic(_ message: String) {
+        appendLog(message)
+    }
+
     private func appendLog(_ message: String) {
         let stamped = "[\(timestampFormatter.string(from: Date()))] \(message)"
         logs.append(stamped)
@@ -1471,6 +1512,10 @@ final class BypassViewModel: ObservableObject {
         guard let data = try? Data(contentsOf: favoritesURL),
               let saved = try? JSONDecoder().decode([FavoriteGame].self, from: data) else { return }
         favorites = saved
+
+        for fav in favorites where fav.thumbnailURL == nil {
+            fetchThumbnailForFavorite(placeId: fav.placeId)
+        }
     }
 
     func saveFavorites() {
