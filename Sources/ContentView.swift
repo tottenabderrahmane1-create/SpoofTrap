@@ -22,8 +22,28 @@ struct ContentView: View {
     @State private var showFFProfiles = false
     @State private var showPlayerTracker = false
     @State private var newProfileName = ""
+    @State private var onboardingComplete = UserDefaults.standard.bool(forKey: "SpoofTrap.onboardingComplete")
 
     var body: some View {
+        ZStack {
+            if !onboardingComplete {
+                OnboardingView(viewModel: viewModel, isComplete: $onboardingComplete)
+                    .transition(.opacity)
+            } else {
+                mainContent
+            }
+        }
+        .background(
+            WindowAccessor { window in
+                configureWindow(window)
+            }
+        )
+        .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
+            viewModel.forceCleanupForTermination()
+        }
+    }
+
+    private var mainContent: some View {
         ZStack {
             background
 
@@ -39,11 +59,6 @@ struct ContentView: View {
                     .transition(.opacity)
             }
         }
-        .background(
-            WindowAccessor { window in
-                configureWindow(window)
-            }
-        )
         .onAppear {
             withAnimation(.easeInOut(duration: 1.8)) {
                 splashProgress = 1
@@ -55,9 +70,6 @@ struct ContentView: View {
                     introVisible = true
                 }
             }
-        }
-        .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
-            viewModel.forceCleanupForTermination()
         }
     }
 
@@ -147,9 +159,14 @@ struct ContentView: View {
                             }
                         }
 
-                        Text("Roblox bypass launcher")
-                            .font(.system(size: 13, weight: .medium, design: .rounded))
-                            .foregroundStyle(.white.opacity(0.55))
+                        HStack(spacing: 4) {
+                            Text("Roblox bypass launcher")
+                                .font(.system(size: 13, weight: .medium, design: .rounded))
+                                .foregroundStyle(.white.opacity(0.55))
+                            Text("v\(viewModel.updateChecker.currentVersion)")
+                                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                                .foregroundStyle(.white.opacity(0.3))
+                        }
                     }
 
                     Spacer()
@@ -675,6 +692,23 @@ struct ContentView: View {
                 Text("Backup & restore all SpoofTrap settings")
                     .font(.system(size: 10, weight: .medium, design: .rounded))
                     .foregroundStyle(.white.opacity(0.4))
+
+                Divider().background(Color.white.opacity(0.1))
+
+                Button {
+                    withAnimation(.easeOut(duration: 0.3)) {
+                        onboardingComplete = false
+                    }
+                } label: {
+                    HStack(spacing: 6) {
+                        Image(systemName: "questionmark.circle")
+                            .font(.system(size: 11))
+                        Text("Show Setup Guide")
+                            .font(.system(size: 11, weight: .medium, design: .rounded))
+                    }
+                    .foregroundStyle(.white.opacity(0.5))
+                }
+                .buttonStyle(.plain)
             }
         }
         .transition(.opacity.combined(with: .move(edge: .top)))
@@ -1198,50 +1232,91 @@ struct ContentView: View {
     }
 
     private var updateBanner: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "arrow.down.circle.fill")
-                .font(.system(size: 16))
-                .foregroundStyle(.cyan)
+        VStack(spacing: 8) {
+            HStack(spacing: 10) {
+                Image(systemName: viewModel.updateChecker.isDownloading ? "arrow.down.circle" : "arrow.down.circle.fill")
+                    .font(.system(size: 16))
+                    .foregroundStyle(.cyan)
+                    .opacity(viewModel.updateChecker.isDownloading ? 0.6 : 1.0)
 
-            VStack(alignment: .leading, spacing: 2) {
-                Text("Update Available — v\(viewModel.updateChecker.latestVersion ?? "")")
-                    .font(.system(size: 12, weight: .bold, design: .rounded))
-                    .foregroundStyle(.white)
-                if let firstEntry = viewModel.updateChecker.changelog.first {
-                    Text(firstEntry)
+                VStack(alignment: .leading, spacing: 2) {
+                    if viewModel.updateChecker.isDownloading {
+                        Text("Updating to v\(viewModel.updateChecker.latestVersion ?? "")…")
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white)
+                        Text("SpoofTrap will restart automatically")
+                            .font(.system(size: 10, weight: .medium, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.5))
+                    } else {
+                        Text("Update Available — v\(viewModel.updateChecker.latestVersion ?? "")")
+                            .font(.system(size: 12, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white)
+                        if let firstEntry = viewModel.updateChecker.changelog.first {
+                            Text(firstEntry)
+                                .font(.system(size: 10, weight: .medium, design: .rounded))
+                                .foregroundStyle(.white.opacity(0.6))
+                                .lineLimit(1)
+                        }
+                    }
+                }
+
+                Spacer()
+
+                if !viewModel.updateChecker.isDownloading {
+                    Button {
+                        viewModel.updateChecker.downloadAndInstall()
+                    } label: {
+                        Text("Update Now")
+                            .font(.system(size: 11, weight: .bold, design: .rounded))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 12)
+                            .padding(.vertical, 6)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .fill(Color.cyan.opacity(0.4))
+                            )
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        viewModel.updateChecker.dismissed = true
+                    } label: {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 10, weight: .bold))
+                            .foregroundStyle(.white.opacity(0.4))
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+
+            if viewModel.updateChecker.isDownloading {
+                ProgressView(value: viewModel.updateChecker.downloadProgress)
+                    .tint(.cyan)
+                    .scaleEffect(x: 1, y: 0.6, anchor: .center)
+            }
+
+            if let error = viewModel.updateChecker.downloadError {
+                HStack(spacing: 4) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .font(.system(size: 9))
+                        .foregroundStyle(.orange)
+                    Text(error)
                         .font(.system(size: 10, weight: .medium, design: .rounded))
-                        .foregroundStyle(.white.opacity(0.6))
-                        .lineLimit(1)
+                        .foregroundStyle(.orange.opacity(0.8))
+                        .lineLimit(2)
+                    Spacer()
+                    if let url = viewModel.updateChecker.manualDownloadURL {
+                        Button {
+                            NSWorkspace.shared.open(url)
+                        } label: {
+                            Text("Manual Download")
+                                .font(.system(size: 10, weight: .semibold, design: .rounded))
+                                .foregroundStyle(.cyan.opacity(0.8))
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
             }
-
-            Spacer()
-
-            if let dl = viewModel.updateChecker.downloadURL, let url = URL(string: dl) {
-                Button {
-                    NSWorkspace.shared.open(url)
-                } label: {
-                    Text("Download")
-                        .font(.system(size: 11, weight: .bold, design: .rounded))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                .fill(Color.cyan.opacity(0.4))
-                        )
-                }
-                .buttonStyle(.plain)
-            }
-
-            Button {
-                viewModel.updateChecker.dismissed = true
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(.white.opacity(0.4))
-            }
-            .buttonStyle(.plain)
         }
         .padding(12)
         .background(
