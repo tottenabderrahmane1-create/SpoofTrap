@@ -212,10 +212,10 @@ Store in `%APPDATA%\SpoofTrap\license.json`:
 
 **Pro Only:**
 - Fast & Custom presets
-- Add custom FastFlags (type any FFlag name + value)
+- Add custom FastFlags (type any FFlag name + value). *Editing/toggling curated flags is FREE.*
 - Advanced settings (Chunk Size, Disorder toggle)
 - Detailed session stats
-- Custom mod file imports (App Icon, Fonts, Avatar BG categories)
+- Custom mod file imports (App Icon, Fonts, Avatar BG, Loading Screen categories)
 - Custom FPS targets (144, 240, Max/unlimited)
 - Detailed Discord Rich Presence (game name, thumbnail, join button)
 - Auto-rejoin on disconnect
@@ -224,11 +224,12 @@ Store in `%APPDATA%\SpoofTrap\license.json`:
 - Roblox update channel switching (ZNext, ZCanary)
 - Full game history (unlimited entries)
 - Unlimited Quick Launch favorites
+- Roblox version pinning (prevent auto-updates while running)
+- Performance overlay widget (floating FPS/memory panel)
 
 **Free Users Get:**
 - Stable & Balanced presets
-- FastFlags editor (toggle/edit all curated flags)
-- FastFlags presets (Performance, Graphics, etc.)
+- FastFlags editor (toggle/edit all curated flags, use presets)
 - Core bypass functionality
 - Choose spoofdpi binary location
 - Death Sound and Custom Cursor mod categories
@@ -237,6 +238,10 @@ Store in `%APPDATA%\SpoofTrap\license.json`:
 - Server region display (region name only)
 - Quick Launch favorites (up to 3)
 - Game history (last 5 sessions)
+- Server hopping (rejoin a different server of same game)
+- Auto-update checker (banner when new version available)
+- Menu bar / compact mode (minimize to tray)
+- Settings backup & restore (export/import `.spooftrap` file)
 
 ### 4. FastFlags
 
@@ -524,7 +529,179 @@ Write the channel name to a config file before Roblox launch.
 
 Channels: `LIVE` (default), `ZNext`, `ZCanary`
 
-### 16. UI Design
+### 16. Auto-Update Checker
+
+On app launch (after splash), fetch your `latest.json` and compare the `version` field against the running app version.
+
+**Remote URL:** Host a `latest.json` on your distribution site/CDN, e.g.:
+```
+https://your-site.com/dist/latest.json
+```
+
+**Format of latest.json (same as macOS):**
+```json
+{
+  "version": "1.5.0",
+  "releaseDate": "2026-04-04",
+  "downloads": {
+    "msix": {
+      "url": "https://your-site.com/dist/SpoofTrap-1.5.0.msix",
+      "sha256": "abc123..."
+    }
+  },
+  "changelog": [
+    "Auto-update checker",
+    "Menu bar mode",
+    "Server hopping"
+  ]
+}
+```
+
+**Implementation:**
+- New service: `UpdateChecker.cs` with `UpdateAvailable`, `LatestVersion`, `DownloadUrl`, `Changelog` properties
+- Call `CheckAsync()` in `App.xaml.cs` after initialization
+- Use semantic version comparison (split on `.`, compare each int)
+- UI: If update available, show a banner at the top of the right column with version + "Download" button
+- User can dismiss the banner (session-only, reappears next launch)
+- **Free for all users**
+
+### 17. System Tray / Compact Mode
+
+Minimize to Windows system tray with a small status icon.
+
+**Windows approach:** Use `NotifyIcon` (from `H.NotifyIcon.WinUI` NuGet) or the Windows App SDK tray API.
+
+**Implementation:**
+- New service: `TrayManager.cs`
+- Creates a tray icon with context menu: Status line, Start/Stop, Show Window, Quit
+- Tray icon color: green circle when running, red when stopped
+- When enabled: closing the window hides it; clicking the tray icon restores; main window disappears from taskbar
+- Add "Minimize to Tray" toggle in Advanced settings
+- Persist `TrayMode` in settings
+- **Free for all users**
+
+```csharp
+// NuGet: H.NotifyIcon.WinUI
+// Or use Windows.UI.Shell.TaskbarManager for modern apps
+```
+
+### 18. Server Hopping
+
+While in a game, one-click to leave and rejoin a different server of the same game.
+
+**Implementation:**
+- Reads `CurrentPlaceId` from `RobloxLogWatcher`
+- Opens `roblox://placeId={currentPlaceId}` (no `gameInstanceId` = Roblox picks a new server)
+- UI: "Hop Server" button in the Live Info card, visible only when `IsInGame` and session is running
+- **Free for all users**
+
+```csharp
+public void ServerHop()
+{
+    if (LogWatcher.IsInGame && LogWatcher.CurrentPlaceId != null)
+    {
+        Process.Start(new ProcessStartInfo
+        {
+            FileName = $"roblox://placeId={LogWatcher.CurrentPlaceId}",
+            UseShellExecute = true
+        });
+        AppendLog($"Server hop initiated for PlaceId {LogWatcher.CurrentPlaceId}.");
+    }
+}
+```
+
+### 19. Roblox Version Pinning (Pro Only)
+
+Prevent Roblox from auto-updating by making the version folder read-only before launch.
+
+**Windows approach:** Set the Roblox version directory ACLs to deny write access, or simpler: use `attrib +R` recursively.
+
+**Implementation:**
+- `VersionPinEnabled` property in settings (default: false)
+- In `StartSessionAsync()`, before launch: run `attrib +R /S /D "{robloxVersionDir}"` or use `DirectoryInfo.Attributes`
+- In `StopSessionAsync()`: run `attrib -R /S /D "{robloxVersionDir}"` to restore
+- Log pin/unpin actions
+- UI: Toggle in Advanced card labeled "Pin Roblox Version"
+- **Pro only** (`CanUseVersionPinning`)
+
+```csharp
+private void SetReadOnly(string path, bool readOnly)
+{
+    foreach (var file in Directory.GetFiles(path, "*", SearchOption.AllDirectories))
+    {
+        var attrs = File.GetAttributes(file);
+        File.SetAttributes(file, readOnly
+            ? attrs | FileAttributes.ReadOnly
+            : attrs & ~FileAttributes.ReadOnly);
+    }
+}
+```
+
+### 20. Performance Overlay Widget (Pro Only)
+
+A small floating transparent window showing live FPS and memory.
+
+**Windows approach:** Create a separate WinUI or WPF `Window` that is always-on-top, click-through, and transparent.
+
+**Implementation:**
+- New service: `PerformanceOverlayManager.cs`
+- Data source: Parse Roblox log lines for FPS counters (lines containing `FPS:` or heartbeat stats) via `RobloxLogWatcher`. Add `CurrentFPS` and `CurrentMemory` properties.
+- Overlay window: 140x70px dark rounded rect with FPS and memory in monospaced text
+- Set `IsAlwaysOnTop = true`, minimize chrome, transparent background
+- Toggle in Advanced settings
+- **Pro only** (`CanUsePerformanceOverlay`)
+
+**Log patterns to parse:**
+```
+FPS: 60.0        → extract "60 FPS"
+Memory: 512.3MB  → extract "512MB"
+```
+
+### 21. Settings Backup & Restore
+
+Export/import all SpoofTrap settings to a single `.spooftrap` JSON file.
+
+**Implementation:**
+- `ExportSettings()`: reads `settings.json`, `favorites.json`, `mods_settings.json`, `fastflags.json`, `game_history.json` from `%APPDATA%\SpoofTrap\` and bundles into one JSON dict. Opens Save dialog.
+- `ImportSettings()`: opens Open dialog for `.spooftrap` file, parses JSON, writes each component back to its file, reloads all settings.
+- UI: Two buttons in Advanced card — "Export Settings" and "Import Settings"
+- **Free for all users**
+
+```json
+{
+  "settings": { ... },
+  "favorites": [ ... ],
+  "mods_settings": { ... },
+  "fastflags": { ... },
+  "game_history": [ ... ]
+}
+```
+
+### 22. Custom Loading Screen Mod (Pro Only)
+
+Add a new mod category for replacing the Roblox loading/splash assets.
+
+**Windows path (relative to version dir):** `content\textures\loading\roblox_loading.png`
+
+**Implementation:**
+- Add to `ModsManager` categories list:
+```csharp
+new ModCategory
+{
+    Id = "loading_screen",
+    Name = "Loading Screen",
+    Description = "Custom loading background image. May not work on all Roblox versions.",
+    Icon = "Photo",
+    RelativePaths = new[] { @"content\textures\loading\roblox_loading.png" },
+    AllowedExtensions = new[] { ".png", ".jpg" },
+    RequiresPro = true
+}
+```
+- The existing `ApplyMods` backup/copy pipeline handles it automatically
+- Show disclaimer in UI: "May not work on all Roblox versions"
+- **Pro only**
+
+### 23. UI Design
 
 Modern dark theme matching macOS version:
 
@@ -601,7 +778,10 @@ SpoofTrapWindows/
 │   │   ├── DiscordRPCManager.cs
 │   │   ├── RobloxLogWatcher.cs
 │   │   ├── GameHistoryManager.cs
-│   │   └── SettingsService.cs
+│   │   ├── SettingsService.cs
+│   │   ├── UpdateChecker.cs
+│   │   ├── TrayManager.cs
+│   │   └── PerformanceOverlayManager.cs
 │   ├── Models/
 │   │   ├── LicenseInfo.cs
 │   │   ├── FastFlag.cs
@@ -693,17 +873,39 @@ public class ProManager : INotifyPropertyChanged
     
     public bool IsPro => _licenseManager.IsValidated;
     
-    // Feature checks
+    // Preset gating
     public bool CanUsePreset(string preset) => 
         preset is "stable" or "balanced" || IsPro;
     
-    public bool CanEditFastFlags => IsPro;
+    // FastFlags: ALL users can edit/toggle curated flags. Only Pro can ADD new custom flags.
+    public bool CanEditFastFlags => true;          // FREE for all users
+    public bool CanAddCustomFastFlags => IsPro;    // PRO only
+    
+    // Settings & stats
     public bool CanAccessAdvanced => IsPro;
     public bool CanViewStats => IsPro;
-    public bool CanImportCustomMods => IsPro;
     
+    // Mods
+    public bool CanImportCustomMods => IsPro;
     public bool CanUseModCategory(string categoryId) =>
         categoryId is "death_sound" or "cursor" || IsPro;
+    
+    // Launcher features
+    public bool CanUseMultiInstance => IsPro;
+    public bool CanUseAutoRejoin => IsPro;
+    public bool CanUseCustomThemes => IsPro;
+    public bool CanUseUpdateChannel => IsPro;
+    public bool CanUseDetailedPresence => IsPro;
+    public bool CanViewFullHistory => IsPro;
+    public bool CanUseCustomFPS => IsPro;
+    public bool CanUseUnlimitedFavorites => IsPro;
+    public bool CanUseVersionPinning => IsPro;
+    public bool CanUsePerformanceOverlay => IsPro;
+    
+    // Free tier caps
+    public int MaxFreeHistory => 5;
+    public int MaxFreeFavorites => 3;
+    public int FreeFPSCap => 120;
 }
 ```
 
@@ -712,25 +914,41 @@ public class ProManager : INotifyPropertyChanged
 ```csharp
 public class MainViewModel : ViewModelBase
 {
+    // Services
     public LicenseManager LicenseManager { get; }
     public ProManager ProManager { get; }
     public FastFlagsManager FastFlagsManager { get; }
     public ModsManager ModsManager { get; }
+    public UpdateChecker UpdateChecker { get; }
+    public TrayManager TrayManager { get; }
+    public PerformanceOverlayManager PerfOverlay { get; }
+    public DiscordRPCManager DiscordRPC { get; }
+    public RobloxLogWatcher LogWatcher { get; }
+    public GameHistoryManager GameHistory { get; }
     
     // State
     public enum BypassState { Stopped, Starting, Running, Stopping }
     public BypassState State { get; set; }
     public bool IsRunning => State == BypassState.Running;
     
-    // Settings
-    public string Preset { get; set; } = "stable"; // stable, balanced, fast, custom
-    public string ProxyScope { get; set; } = "app"; // app, system
+    // Core settings
+    public string Preset { get; set; } = "stable";
+    public string ProxyScope { get; set; } = "app";
     public string DnsHttpsUrl { get; set; } = "https://1.1.1.1/dns-query";
-    public int HttpsChunkSize { get; set; } = 1;     // range: 1-16
+    public int HttpsChunkSize { get; set; } = 1;
     public bool HttpsDisorder { get; set; } = true;
     public bool HybridLaunch { get; set; } = false;
-    public int AppLaunchDelay { get; set; } = 0;      // range: 0-10
-    public bool ReducedMotion { get; set; } = false;   // disable animations
+    public int AppLaunchDelay { get; set; } = 0;
+    public bool ReducedMotion { get; set; } = false;
+    
+    // Launcher features
+    public int FpsTarget { get; set; } = 60;
+    public string AccentColorHex { get; set; } = "#73DBFF";
+    public string UpdateChannel { get; set; } = "LIVE";
+    public bool AutoRejoinEnabled { get; set; } = false;
+    public bool TrayMode { get; set; } = false;
+    public bool VersionPinEnabled { get; set; } = false;
+    public List<FavoriteGame> Favorites { get; set; }
     
     // Paths
     public string RobloxPath { get; set; }
@@ -746,9 +964,17 @@ public class MainViewModel : ViewModelBase
     public ICommand ChooseRobloxCommand { get; }
     public ICommand ChooseSpoofdpiCommand { get; }
     public ICommand CopyLogsCommand { get; }
+    public ICommand ServerHopCommand { get; }
+    public ICommand ExportSettingsCommand { get; }
+    public ICommand ImportSettingsCommand { get; }
     
+    // Lifecycle
+    public async Task InitializeAsync(); // called on startup: load settings, check update, validate license
     public async Task StartSessionAsync();
     public async Task StopSessionAsync();
+    public void ServerHop();
+    public void ExportSettings();
+    public void ImportSettings();
 }
 ```
 
@@ -769,7 +995,12 @@ Store in `%APPDATA%\SpoofTrap\settings.json`:
   "httpsChunkSize": 1,
   "httpsDisorder": true,
   "appLaunchDelay": 0,
-  "reducedMotion": false
+  "reducedMotion": false,
+  "fpsTarget": 60,
+  "accentColorHex": "#73DBFF",
+  "updateChannel": "LIVE",
+  "trayMode": false,
+  "versionPinEnabled": false
 }
 ```
 
@@ -796,6 +1027,7 @@ License storage: see "License Storage (local)" section above.
 <PackageReference Include="CommunityToolkit.Mvvm" Version="8.*" />
 <PackageReference Include="CommunityToolkit.WinUI.UI.Controls" Version="7.*" />
 <PackageReference Include="System.Management" Version="8.*" />
+<PackageReference Include="H.NotifyIcon.WinUI" Version="2.*" />  <!-- System tray icon -->
 ```
 
 ---
@@ -803,14 +1035,24 @@ License storage: see "License Storage (local)" section above.
 ## Implementation Order
 
 1. **Project Setup** - Create WinUI 3 project
-2. **Settings Service** - Load/save settings
+2. **Settings Service** - Load/save settings (includes all new fields)
 3. **LicenseManager** - Critical for Pro features
-4. **ProManager** - Feature gating
-5. **Basic UI** - Main window layout
-6. **MainViewModel** - Core state
+4. **ProManager** - Feature gating (all gates listed above)
+5. **Basic UI** - Main window layout, two-column, glass cards
+6. **MainViewModel** - Core state + all launcher feature properties
 7. **ProxyService** - spoofdpi management
-8. **FastFlagsManager** - Flag editing
-9. **Polish** - Error handling, packaging
+8. **FastFlagsManager** - Flag editing (free to edit, Pro to add custom)
+9. **ModsManager** - File replacement mods (including Loading Screen)
+10. **UpdateChecker** - Auto-update banner
+11. **TrayManager** - System tray / compact mode
+12. **RobloxLogWatcher** - Log parsing + FPS/memory
+13. **DiscordRPCManager** - Rich presence via named pipe
+14. **GameHistoryManager** - Session history
+15. **Server Hopping** - Deep link rejoin
+16. **Version Pinning** - Read-only file attributes
+17. **Performance Overlay** - Floating stats window
+18. **Settings Backup/Restore** - Export/import
+19. **Polish** - Error handling, packaging, MSIX
 
 ---
 

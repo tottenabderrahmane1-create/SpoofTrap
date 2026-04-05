@@ -39,6 +39,12 @@ final class ProManager: ObservableObject {
     var canViewFullHistory: Bool { isPro }
     var canUseCustomFPS: Bool { isPro }
     var canUseUnlimitedFavorites: Bool { isPro }
+    var canUseVersionPinning: Bool { isPro }
+    var canUsePerformanceOverlay: Bool { isPro }
+    var canUseSmartJoin: Bool { isPro }
+    var canUseDNSPreCache: Bool { isPro }
+    var canUseProcessBoost: Bool { isPro }
+    var canUseLowPingPreset: Bool { isPro }
     var maxFreeHistory: Int { 5 }
     var maxFreeFavorites: Int { 3 }
     var freeFPSCap: Int { 120 }

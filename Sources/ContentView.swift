@@ -447,7 +447,7 @@ struct ContentView: View {
                 settingRow(label: "Auto-Rejoin") {
                     Toggle("", isOn: Binding(
                         get: { viewModel.autoRejoinEnabled },
-                        set: { viewModel.autoRejoinEnabled = $0 }
+                        set: { viewModel.setAutoRejoin($0) }
                     ))
                     .labelsHidden()
                     .toggleStyle(.switch)
@@ -512,11 +512,153 @@ struct ContentView: View {
                                         .stroke(Color.white, lineWidth: viewModel.accentColorHex == option.hex ? 2 : 0)
                                 )
                                 .onTapGesture {
-                                    viewModel.accentColorHex = option.hex
+                                    viewModel.setAccentColor(option.hex)
                                 }
                         }
                     }
                 }
+
+                Divider().background(Color.white.opacity(0.1))
+
+                settingRow(label: "Menu Bar Mode") {
+                    Toggle("", isOn: Binding(
+                        get: { viewModel.menuBarMode },
+                        set: { viewModel.setMenuBarMode($0) }
+                    ))
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
+                    .tint(.cyan)
+                }
+                Text("Minimize to menu bar instead of quitting")
+                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.4))
+
+                settingRow(label: "Pin Roblox Version") {
+                    Toggle("", isOn: Binding(
+                        get: { viewModel.versionPinEnabled },
+                        set: { viewModel.setVersionPinEnabled($0) }
+                    ))
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
+                    .tint(.orange)
+                    .disabled(!viewModel.proManager.canUseVersionPinning)
+                }
+                Text("Prevent Roblox from auto-updating while running")
+                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.4))
+                if !viewModel.proManager.canUseVersionPinning {
+                    proLockLabel("Version pinning requires Pro")
+                }
+
+                settingRow(label: "DNS Pre-Cache") {
+                    Toggle("", isOn: Binding(
+                        get: { viewModel.dnsPreCacheEnabled },
+                        set: { viewModel.setDNSPreCache($0) }
+                    ))
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
+                    .tint(.green)
+                    .disabled(!viewModel.proManager.canUseDNSPreCache)
+                }
+                Text("Pre-resolve Roblox domains on session start")
+                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.4))
+                if !viewModel.proManager.canUseDNSPreCache {
+                    proLockLabel("DNS pre-cache requires Pro")
+                }
+
+                settingRow(label: "Process Priority Boost") {
+                    Toggle("", isOn: Binding(
+                        get: { viewModel.processBoostEnabled },
+                        set: { viewModel.setProcessBoost($0) }
+                    ))
+                    .labelsHidden()
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
+                    .tint(.green)
+                    .disabled(!viewModel.proManager.canUseProcessBoost)
+                }
+                Text("Set Roblox to high CPU/IO priority on launch")
+                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.4))
+                if !viewModel.proManager.canUseProcessBoost {
+                    proLockLabel("Process boost requires Pro")
+                }
+
+                Divider().background(Color.white.opacity(0.1))
+
+                settingRow(label: "Performance Overlay") {
+                    Button {
+                        guard viewModel.proManager.canUsePerformanceOverlay else { return }
+                        viewModel.perfOverlay.toggle(logWatcher: viewModel.logWatcher)
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: viewModel.perfOverlay.isVisible ? "eye.slash" : "gauge.with.dots.needle.33percent")
+                                .font(.system(size: 10))
+                            Text(viewModel.perfOverlay.isVisible ? "Hide" : "Show")
+                        }
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.white.opacity(viewModel.proManager.canUsePerformanceOverlay ? 0.8 : 0.3))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .fill(Color.white.opacity(0.08))
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+                if !viewModel.proManager.canUsePerformanceOverlay {
+                    proLockLabel("Performance overlay requires Pro")
+                }
+
+                Divider().background(Color.white.opacity(0.1))
+
+                HStack(spacing: 10) {
+                    Button {
+                        viewModel.exportSettings()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "square.and.arrow.up")
+                                .font(.system(size: 10))
+                            Text("Export")
+                        }
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.8))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .fill(Color.white.opacity(0.08))
+                        )
+                    }
+                    .buttonStyle(.plain)
+
+                    Button {
+                        viewModel.importSettings()
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "square.and.arrow.down")
+                                .font(.system(size: 10))
+                            Text("Import")
+                        }
+                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.8))
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .fill(Color.white.opacity(0.08))
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+                Text("Backup & restore all SpoofTrap settings")
+                    .font(.system(size: 10, weight: .medium, design: .rounded))
+                    .foregroundStyle(.white.opacity(0.4))
             }
         }
         .transition(.opacity.combined(with: .move(edge: .top)))
@@ -755,8 +897,14 @@ struct ContentView: View {
     private var fastFlagPresetPicker: some View {
         Menu {
             ForEach(FastFlagPreset.allCases) { preset in
-                Button(preset.rawValue) {
-                    viewModel.fastFlagsManager.applyPreset(preset)
+                if preset == .lowPing && !viewModel.proManager.canUseLowPingPreset {
+                    Button("\(preset.rawValue) 🔒 PRO") {}
+                        .disabled(true)
+                } else {
+                    Button(preset.rawValue) {
+                        viewModel.fastFlagsManager.applyPreset(preset)
+                        viewModel.syncFPSFromFastFlags()
+                    }
                 }
             }
         } label: {
@@ -931,7 +1079,7 @@ struct ContentView: View {
 
                 Spacer()
 
-                if !locked {
+                if !locked && viewModel.proManager.canImportCustomMods {
                     Button {
                         viewModel.modsManager.importCustomMod(for: cat.id)
                     } label: {
@@ -941,6 +1089,14 @@ struct ContentView: View {
                     }
                     .buttonStyle(.plain)
                     .disabled(viewModel.isRunning)
+                } else if !locked && !viewModel.proManager.canImportCustomMods {
+                    HStack(spacing: 4) {
+                        Image(systemName: "lock.fill")
+                            .font(.system(size: 8))
+                        Text("PRO")
+                            .font(.system(size: 8, weight: .heavy, design: .rounded))
+                    }
+                    .foregroundStyle(.yellow.opacity(0.5))
                 }
             }
 
@@ -1014,7 +1170,74 @@ struct ContentView: View {
     @State private var licenseKeyInput: String = ""
     @State private var isActivating: Bool = false
     @State private var activationError: String?
-    
+
+    private func proLockLabel(_ text: String) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: "lock.fill")
+                .font(.system(size: 8))
+            Text(text)
+                .font(.system(size: 10, weight: .medium, design: .rounded))
+        }
+        .foregroundStyle(.yellow.opacity(0.6))
+    }
+
+    private var updateBanner: some View {
+        HStack(spacing: 10) {
+            Image(systemName: "arrow.down.circle.fill")
+                .font(.system(size: 16))
+                .foregroundStyle(.cyan)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Update Available — v\(viewModel.updateChecker.latestVersion ?? "")")
+                    .font(.system(size: 12, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                if let firstEntry = viewModel.updateChecker.changelog.first {
+                    Text(firstEntry)
+                        .font(.system(size: 10, weight: .medium, design: .rounded))
+                        .foregroundStyle(.white.opacity(0.6))
+                        .lineLimit(1)
+                }
+            }
+
+            Spacer()
+
+            if let dl = viewModel.updateChecker.downloadURL, let url = URL(string: dl) {
+                Button {
+                    NSWorkspace.shared.open(url)
+                } label: {
+                    Text("Download")
+                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(
+                            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                .fill(Color.cyan.opacity(0.4))
+                        )
+                }
+                .buttonStyle(.plain)
+            }
+
+            Button {
+                viewModel.updateChecker.dismissed = true
+            } label: {
+                Image(systemName: "xmark")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(.white.opacity(0.4))
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                .fill(Color.cyan.opacity(0.1))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                        .stroke(Color.cyan.opacity(0.3), lineWidth: 1)
+                )
+        )
+    }
+
     private var upgradeCard: some View {
         glassCard {
             VStack(alignment: .leading, spacing: 14) {
@@ -1276,6 +1499,10 @@ struct ContentView: View {
                                 .font(.system(size: 10, weight: .semibold, design: .rounded))
                                 .foregroundStyle(.green)
                         }
+                    } else {
+                        Text(viewModel.logWatcher.watcherStatus)
+                            .font(.system(size: 9, weight: .medium, design: .monospaced))
+                            .foregroundStyle(.white.opacity(0.3))
                     }
                 }
 
@@ -1302,6 +1529,20 @@ struct ContentView: View {
                     }
                 }
 
+                if let ping = viewModel.logWatcher.currentPing {
+                    HStack(spacing: 8) {
+                        Image(systemName: "antenna.radiowaves.left.and.right")
+                            .font(.system(size: 11))
+                            .foregroundStyle(pingColor(ping))
+                        Text(ping)
+                            .font(.system(size: 13, weight: .bold, design: .monospaced))
+                            .foregroundStyle(pingColor(ping))
+                        Text("ping")
+                            .font(.system(size: 10, weight: .medium, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.4))
+                    }
+                }
+
                 if let ip = viewModel.logWatcher.currentServerIP, viewModel.proManager.isPro {
                     HStack(spacing: 8) {
                         Image(systemName: "network")
@@ -1310,6 +1551,55 @@ struct ContentView: View {
                         Text(ip)
                             .font(.system(size: 10, weight: .medium, design: .monospaced))
                             .foregroundStyle(.white.opacity(0.5))
+                    }
+                }
+
+                if viewModel.logWatcher.isInGame {
+                    HStack(spacing: 8) {
+                        Button {
+                            viewModel.serverHop()
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "arrow.triangle.2.circlepath")
+                                    .font(.system(size: 11, weight: .semibold))
+                                Text("Hop Server")
+                                    .font(.system(size: 11, weight: .semibold, design: .rounded))
+                            }
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 6)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .fill(Color.cyan.opacity(0.25))
+                            )
+                        }
+                        .buttonStyle(.plain)
+
+                        if let placeId = viewModel.logWatcher.currentPlaceId {
+                            Button {
+                                viewModel.smartJoin(placeId: placeId)
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Image(systemName: viewModel.proManager.canUseSmartJoin ? "bolt.fill" : "lock.fill")
+                                        .font(.system(size: 11, weight: .semibold))
+                                    Text("Best Server")
+                                        .font(.system(size: 11, weight: .semibold, design: .rounded))
+                                    if !viewModel.proManager.canUseSmartJoin {
+                                        Text("PRO")
+                                            .font(.system(size: 8, weight: .heavy, design: .rounded))
+                                            .foregroundStyle(.yellow)
+                                    }
+                                }
+                                .foregroundStyle(.white.opacity(viewModel.proManager.canUseSmartJoin ? 1 : 0.4))
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 6)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                        .fill(Color.green.opacity(viewModel.proManager.canUseSmartJoin ? 0.25 : 0.1))
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
                 }
 
@@ -1578,6 +1868,9 @@ struct ContentView: View {
 
     private var rightColumn: some View {
         VStack(spacing: 16) {
+            if viewModel.updateChecker.updateAvailable && !viewModel.updateChecker.dismissed {
+                updateBanner
+            }
             sessionCard
             if viewModel.isRunning {
                 liveInfoCard
@@ -1788,6 +2081,14 @@ extension ContentView {
         Text(text)
             .font(.system(size: 16, weight: .bold, design: .rounded))
             .foregroundStyle(.white)
+    }
+
+    private func pingColor(_ ping: String) -> Color {
+        let ms = Int(ping.replacingOccurrences(of: " ms", with: "")) ?? 999
+        if ms < 50 { return .green }
+        if ms < 100 { return .yellow }
+        if ms < 200 { return .orange }
+        return .red
     }
 
     private func settingRow<Content: View>(label: String, @ViewBuilder content: () -> Content) -> some View {

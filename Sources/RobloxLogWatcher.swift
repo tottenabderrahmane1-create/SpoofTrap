@@ -11,10 +11,14 @@ final class RobloxLogWatcher: ObservableObject {
     @Published var currentPing: String?
     @Published var isInGame: Bool = false
     @Published var disconnected: Bool = false
+    @Published var currentFPS: String?
+    @Published var currentMemory: String?
+    @Published var watcherStatus: String = "idle"
 
     private var watchTask: Task<Void, Never>?
     private var lastFileOffset: UInt64 = 0
     private var logFileURL: URL?
+    private var lastLogFileName: String?
 
     private static var logDirectory: URL {
         FileManager.default.homeDirectoryForCurrentUser
@@ -23,13 +27,23 @@ final class RobloxLogWatcher: ObservableObject {
 
     func startWatching() {
         stopWatching()
-        logFileURL = Self.findLatestLog()
-        lastFileOffset = logFileURL.flatMap { (try? FileManager.default.attributesOfItem(atPath: $0.path))?[.size] as? UInt64 } ?? 0
+
+        let found = Self.findLatestLog()
+        logFileURL = found
+        lastLogFileName = found?.lastPathComponent
+
+        if let url = found {
+            watcherStatus = "scanning \(url.lastPathComponent)"
+            scanExistingContent(url)
+        } else {
+            watcherStatus = "no log found"
+        }
 
         watchTask = Task { [weak self] in
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 2_000_000_000)
-                await self?.pollLog()
+                self?.pollLog()
+                self?.pollProcessStatsAsync()
             }
         }
     }
@@ -37,28 +51,132 @@ final class RobloxLogWatcher: ObservableObject {
     func stopWatching() {
         watchTask?.cancel()
         watchTask = nil
+        watcherStatus = "stopped"
+    }
+
+    private func scanExistingContent(_ url: URL) {
+        guard let handle = try? FileHandle(forReadingFrom: url) else {
+            watcherStatus = "cannot open log"
+            return
+        }
+        defer { try? handle.close() }
+
+        let attrs = try? FileManager.default.attributesOfItem(atPath: url.path)
+        let fileSize = (attrs?[.size] as? UInt64) ?? 0
+
+        let scanSize: UInt64 = min(fileSize, 128 * 1024)
+        let startOffset = fileSize - scanSize
+        handle.seek(toFileOffset: startOffset)
+
+        guard let data = try? handle.readToEnd() else {
+            lastFileOffset = fileSize
+            return
+        }
+
+        guard let text = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .ascii) else {
+            lastFileOffset = fileSize
+            return
+        }
+
+        var foundJoin = false
+        for line in text.components(separatedBy: .newlines) {
+            parseLine(line)
+            if line.contains("Joining game") { foundJoin = true }
+        }
+
+        lastFileOffset = fileSize
+        watcherStatus = foundJoin ? "active (game detected)" : "watching"
     }
 
     private func pollLog() {
-        guard let url = logFileURL ?? Self.findLatestLog() else { return }
-        if logFileURL == nil { logFileURL = url }
+        let latestLog = Self.findLatestLog()
 
+        if let latest = latestLog {
+            let latestName = latest.lastPathComponent
+            if latestName != lastLogFileName {
+                logFileURL = latest
+                lastLogFileName = latestName
+                lastFileOffset = 0
+                watcherStatus = "switched to \(latestName)"
+            }
+        }
+
+        if logFileURL == nil {
+            logFileURL = latestLog
+            lastLogFileName = latestLog?.lastPathComponent
+        }
+
+        guard let url = logFileURL else { return }
         guard let handle = try? FileHandle(forReadingFrom: url) else { return }
         defer { try? handle.close() }
 
         handle.seek(toFileOffset: lastFileOffset)
         guard let data = try? handle.readToEnd(), !data.isEmpty else { return }
-        lastFileOffset += UInt64(data.count)
 
-        guard let text = String(data: data, encoding: .utf8) else { return }
+        guard let text = String(data: data, encoding: .utf8) ?? String(data: data, encoding: .ascii) else {
+            lastFileOffset += UInt64(data.count)
+            return
+        }
+
+        lastFileOffset += UInt64(data.count)
 
         for line in text.components(separatedBy: .newlines) {
             parseLine(line)
         }
     }
 
+    private func pollProcessStatsAsync() {
+        let serverIP = currentServerIP
+        Task.detached {
+            let memStr = Self.readProcessMemory()
+            let pingMs = Self.measurePing(ip: serverIP)
+            await MainActor.run { @Sendable [weak self] in
+                if let mem = memStr { self?.currentMemory = mem }
+                if let ping = pingMs { self?.currentPing = "\(ping) ms" }
+                else if serverIP == nil { self?.currentPing = nil }
+            }
+        }
+    }
+
+    private nonisolated static func readProcessMemory() -> String? {
+        let process = Process()
+        let pipe = Pipe()
+        process.executableURL = URL(fileURLWithPath: "/usr/bin/pgrep")
+        process.arguments = ["-x", "RobloxPlayer"]
+        process.standardOutput = pipe
+        process.standardError = pipe
+        do {
+            try process.run()
+            process.waitUntilExit()
+        } catch { return nil }
+
+        let pidData = pipe.fileHandleForReading.readDataToEndOfFile()
+        guard let pidStr = String(data: pidData, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines),
+              let pid = pidStr.components(separatedBy: .newlines).first,
+              !pid.isEmpty else {
+            return nil
+        }
+
+        let psProcess = Process()
+        let psPipe = Pipe()
+        psProcess.executableURL = URL(fileURLWithPath: "/bin/ps")
+        psProcess.arguments = ["-p", pid, "-o", "rss="]
+        psProcess.standardOutput = psPipe
+        psProcess.standardError = psPipe
+        do {
+            try psProcess.run()
+            psProcess.waitUntilExit()
+        } catch { return nil }
+
+        let data = psPipe.fileHandleForReading.readDataToEndOfFile()
+        guard let output = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines),
+              let rssKB = Int(output) else { return nil }
+
+        let mb = rssKB / 1024
+        return "\(mb) MB"
+    }
+
     private func parseLine(_ line: String) {
-        // Detect game join: "[FLog::Output] ! Joining game 'XXXXXXXX-...' place NNNNN"
         if line.contains("Joining game") || line.contains("joining game") {
             if let range = line.range(of: "place (\\d+)", options: .regularExpression) {
                 let placeStr = line[range].replacingOccurrences(of: "place ", with: "")
@@ -73,7 +191,6 @@ final class RobloxLogWatcher: ObservableObject {
             }
         }
 
-        // Detect server IP: "UDMUX Address = X.X.X.X"
         if line.contains("UDMUX") || line.contains("udmux") {
             if let range = line.range(of: "(\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})", options: .regularExpression) {
                 let ip = String(line[range])
@@ -82,31 +199,57 @@ final class RobloxLogWatcher: ObservableObject {
             }
         }
 
-        // Detect disconnect
-        if line.contains("Disconnected") || line.contains("Connection lost") || line.contains("Kicked") {
+        // Only detect real game exits — MegaReplicator destruction
+        // is the reliable indicator that the player left the game server.
+        // Client:Disconnect fires for secondary connections (SignalR, WebSocket)
+        // even while the player is still in-game.
+        if line.contains("Destroying MegaReplicator") {
+            isInGame = false
+            disconnected = true
+            currentServerIP = nil
+        }
+
+        if line.contains("Kicked") && line.contains("from server") {
             isInGame = false
             disconnected = true
         }
 
-        // Detect successful teleport (re-joining)
         if line.contains("Teleport") && line.contains("Started") {
             disconnected = false
+        }
+
+        // Memory from AppMemUsageStatus (value in bytes)
+        if line.contains("AppMemUsageStatus") {
+            if let range = line.range(of: #"\]\s+([\d.]+)"#, options: .regularExpression) {
+                let matched = String(line[range])
+                if let numRange = matched.range(of: #"[\d.]+"#, options: .regularExpression) {
+                    let numStr = String(matched[numRange])
+                    if let val = Double(numStr), val > 1_000_000 {
+                        let mb = Int(val / (1024 * 1024))
+                        if mb > 0 && mb < 100_000 {
+                            currentMemory = "\(mb) MB"
+                        }
+                    }
+                }
+            }
         }
     }
 
     private func resolveGameName(placeId: String) {
-        Task {
+        Task.detached {
             guard let url = URL(string: "https://games.roblox.com/v1/games/multiget-place-details?placeIds=\(placeId)") else { return }
             guard let (data, _) = try? await URLSession.shared.data(from: url),
                   let json = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
                   let first = json.first,
                   let name = first["name"] as? String else { return }
-            await MainActor.run { self.currentGameName = name }
+            await MainActor.run { [weak self] in
+                self?.currentGameName = name
+            }
         }
     }
 
     private func resolveRegion(ip: String) {
-        Task {
+        Task.detached {
             guard let url = URL(string: "http://ip-api.com/json/\(ip)?fields=country,regionName,city,query,lat,lon") else { return }
             guard let (data, _) = try? await URLSession.shared.data(from: url),
                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
@@ -116,10 +259,37 @@ final class RobloxLogWatcher: ObservableObject {
             let country = json["country"] as? String ?? ""
 
             let display = [city, region, country].filter { !$0.isEmpty }.joined(separator: ", ")
-            await MainActor.run {
-                self.currentRegion = display.isEmpty ? "Unknown" : display
+            await MainActor.run { [weak self] in
+                self?.currentRegion = display.isEmpty ? "Unknown" : display
             }
         }
+    }
+
+    private nonisolated static func measurePing(ip: String?) -> Int? {
+        guard let ip, !ip.isEmpty else { return nil }
+        let process = Process()
+        let pipe = Pipe()
+        process.executableURL = URL(fileURLWithPath: "/sbin/ping")
+        process.arguments = ["-c", "1", "-W", "2000", ip]
+        process.standardOutput = pipe
+        process.standardError = pipe
+        do {
+            try process.run()
+            process.waitUntilExit()
+        } catch { return nil }
+
+        let data = pipe.fileHandleForReading.readDataToEndOfFile()
+        guard let output = String(data: data, encoding: .utf8) else { return nil }
+
+        if let range = output.range(of: #"time[=<]([\d.]+)"#, options: .regularExpression) {
+            let matched = String(output[range])
+            if let numRange = matched.range(of: #"[\d.]+"#, options: .regularExpression) {
+                if let ms = Double(String(matched[numRange])) {
+                    return Int(ms.rounded())
+                }
+            }
+        }
+        return nil
     }
 
     private static func findLatestLog() -> URL? {
@@ -130,7 +300,7 @@ final class RobloxLogWatcher: ObservableObject {
         ) else { return nil }
 
         return files
-            .filter { $0.pathExtension == "log" || $0.lastPathComponent.hasPrefix("log_") }
+            .filter { $0.pathExtension == "log" }
             .sorted {
                 let d1 = (try? $0.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate ?? .distantPast
                 let d2 = (try? $1.resourceValues(forKeys: [.contentModificationDateKey]))?.contentModificationDate ?? .distantPast
