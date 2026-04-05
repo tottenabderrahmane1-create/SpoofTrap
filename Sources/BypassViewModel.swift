@@ -149,6 +149,7 @@ final class BypassViewModel: ObservableObject {
     private var presenceTask: Task<Void, Never>?
     private var systemProxyState: [SystemProxyState] = []
     private var isRestoringSettings = false
+    private var hasLoadedFavorites = false
     private var nestedSubs = Set<AnyCancellable>()
     private let timestampFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -1531,9 +1532,16 @@ final class BypassViewModel: ObservableObject {
     }
 
     private func loadFavorites() {
+        if hasLoadedFavorites && !isRestoringSettings { return }
+
         guard let data = try? Data(contentsOf: favoritesURL),
-              let saved = try? JSONDecoder().decode([FavoriteGame].self, from: data) else { return }
+              let saved = try? JSONDecoder().decode([FavoriteGame].self, from: data) else {
+            hasLoadedFavorites = true
+            return
+        }
+
         favorites = saved
+        hasLoadedFavorites = true
 
         for fav in favorites where fav.thumbnailURL == nil {
             fetchThumbnailForFavorite(placeId: fav.placeId)
