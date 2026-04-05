@@ -328,7 +328,7 @@ final class RobloxLogWatcher: ObservableObject {
 
     private func resolveRegion(ip: String) {
         Task.detached {
-            guard let url = URL(string: "http://ip-api.com/json/\(ip)?fields=country,regionName,city,query,lat,lon") else { return }
+            guard let url = URL(string: "https://ip-api.com/json/\(ip)?fields=country,regionName,city,query,lat,lon") else { return }
             guard let (data, _) = try? await URLSession.shared.data(from: url),
                   let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
 
