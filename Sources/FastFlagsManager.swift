@@ -32,6 +32,7 @@ enum FastFlagPreset: String, CaseIterable, Identifiable {
     case none = "None"
     case performance = "Performance"
     case quality = "Quality"
+    case lowPing = "Low Ping"
     case network = "Network Fix"
     case debug = "Debug"
     
@@ -62,6 +63,14 @@ final class FastFlagsManager: ObservableObject {
         FastFlag(id: "DFIntConnectionMTUSize", name: "MTU Size", description: "Network packet size", category: .network, valueType: .int, isEnabled: false, value: "1400", defaultValue: "1396"),
         FastFlag(id: "FFlagDebugDisableTimeoutDisconnect", name: "Disable Timeout", description: "Prevent timeout disconnects", category: .network, valueType: .bool, isEnabled: false, value: "true", defaultValue: "false"),
         FastFlag(id: "DFIntRakNetResendBufferArrayLength", name: "Resend Buffer", description: "Network resend buffer size", category: .network, valueType: .int, isEnabled: false, value: "256", defaultValue: "128"),
+        FastFlag(id: "DFIntRaknetBandwidthPingSendEveryXSeconds", name: "Ping Interval", description: "How often to send ping packets (lower = more responsive)", category: .network, valueType: .int, isEnabled: false, value: "1", defaultValue: "10"),
+        FastFlag(id: "DFIntOptimizePingThreshold", name: "Ping Threshold", description: "Optimize when ping exceeds this (ms)", category: .network, valueType: .int, isEnabled: false, value: "50", defaultValue: "150"),
+        FastFlag(id: "DFIntPlayerNetworkUpdateQueueSize", name: "Net Queue Size", description: "Player network update queue", category: .network, valueType: .int, isEnabled: false, value: "32", defaultValue: "8"),
+        FastFlag(id: "DFIntRakNetResendRttMultiple", name: "Resend RTT Multiple", description: "RTT multiplier for resends (lower = faster retransmit)", category: .network, valueType: .int, isEnabled: false, value: "2", defaultValue: "3"),
+        FastFlag(id: "DFIntRakNetMaximumSendWindow", name: "Send Window", description: "Max send window for reliable packets", category: .network, valueType: .int, isEnabled: false, value: "4096", defaultValue: "2048"),
+        FastFlag(id: "DFIntDataSenderRate", name: "Data Send Rate", description: "Network data sender rate (Hz)", category: .network, valueType: .int, isEnabled: false, value: "60", defaultValue: "30"),
+        FastFlag(id: "FFlagOptimizeNetwork", name: "Optimize Network", description: "Enable network optimization pipeline", category: .network, valueType: .bool, isEnabled: false, value: "true", defaultValue: "false"),
+        FastFlag(id: "DFIntNetworkLatencyTolerance", name: "Latency Tolerance", description: "Network latency tolerance (ms)", category: .network, valueType: .int, isEnabled: false, value: "50", defaultValue: "200"),
         
         // Performance
         FastFlag(id: "FFlagEnableInGameMenuChrome", name: "New Menu", description: "Enable new in-game menu", category: .performance, valueType: .bool, isEnabled: false, value: "true", defaultValue: "false"),
@@ -145,6 +154,19 @@ final class FastFlagsManager: ObservableObject {
             enableFlag("DFFlagTextureQualityOverrideEnabled", value: "true")
             enableFlag("DFIntTextureQualityOverride", value: "3")
             
+        case .lowPing:
+            enableFlag("DFIntConnectionMTUSize", value: "1400")
+            enableFlag("DFIntRakNetResendBufferArrayLength", value: "256")
+            enableFlag("DFIntRaknetBandwidthPingSendEveryXSeconds", value: "1")
+            enableFlag("DFIntOptimizePingThreshold", value: "50")
+            enableFlag("DFIntPlayerNetworkUpdateQueueSize", value: "32")
+            enableFlag("DFIntRakNetResendRttMultiple", value: "2")
+            enableFlag("DFIntRakNetMaximumSendWindow", value: "4096")
+            enableFlag("DFIntDataSenderRate", value: "60")
+            enableFlag("FFlagOptimizeNetwork", value: "true")
+            enableFlag("DFIntNetworkLatencyTolerance", value: "50")
+            enableFlag("FFlagDebugDisableTimeoutDisconnect", value: "true")
+
         case .network:
             enableFlag("DFIntConnectionMTUSize", value: "1400")
             enableFlag("FFlagDebugDisableTimeoutDisconnect", value: "true")
@@ -236,6 +258,13 @@ final class FastFlagsManager: ObservableObject {
             if let index = flags.firstIndex(where: { $0.id == savedFlag.id }) {
                 flags[index].isEnabled = savedFlag.isEnabled
                 flags[index].value = savedFlag.value
+            } else if !Self.allowedFlags.contains(where: { $0.id == savedFlag.id }) {
+                let customFlag = FastFlag(
+                    id: savedFlag.id, name: savedFlag.id, description: "Custom flag",
+                    category: .debug, valueType: savedFlag.value == "true" || savedFlag.value == "false" ? .bool : .int,
+                    isEnabled: savedFlag.isEnabled, value: savedFlag.value, defaultValue: savedFlag.value
+                )
+                flags.append(customFlag)
             }
         }
     }

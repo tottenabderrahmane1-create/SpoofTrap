@@ -1,4 +1,5 @@
 import AppKit
+import Combine
 import Foundation
 
 @MainActor
@@ -75,6 +76,11 @@ final class BypassViewModel: ObservableObject {
         var fpsTarget: Int?
         var accentColorHex: String?
         var updateChannel: String?
+        var menuBarMode: Bool?
+        var versionPinEnabled: Bool?
+        var autoRejoinEnabled: Bool?
+        var dnsPreCacheEnabled: Bool?
+        var processBoostEnabled: Bool?
     }
 
     private struct SystemProxyState {
@@ -113,6 +119,13 @@ final class BypassViewModel: ObservableObject {
     @Published var discordRPC = DiscordRPCManager()
     @Published var logWatcher = RobloxLogWatcher()
     @Published var gameHistory = GameHistoryManager()
+    @Published var updateChecker = UpdateChecker()
+    @Published var menuBarManager = MenuBarManager()
+    @Published var perfOverlay = PerformanceOverlayManager()
+    @Published var menuBarMode: Bool = false
+    @Published var versionPinEnabled: Bool = false
+    @Published var dnsPreCacheEnabled: Bool = true
+    @Published var processBoostEnabled: Bool = true
     
     // Pro Features
     @Published var proManager = ProManager()
@@ -127,6 +140,7 @@ final class BypassViewModel: ObservableObject {
     private var presenceTask: Task<Void, Never>?
     private var systemProxyState: [SystemProxyState] = []
     private var isRestoringSettings = false
+    private var nestedSubs = Set<AnyCancellable>()
     private let timestampFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.dateFormat = "HH:mm:ss"
@@ -136,6 +150,33 @@ final class BypassViewModel: ObservableObject {
     init() {
         loadSettings()
         refreshEnvironmentSnapshot()
+        updateChecker.check()
+        AppDelegate.menuBarManager = menuBarManager
+        if menuBarMode {
+            menuBarManager.setEnabled(true, viewModel: self)
+        }
+        menuBarManager.setup(viewModel: self)
+        forwardNestedChanges()
+    }
+
+    private func forwardNestedChanges() {
+        func forward<T: ObservableObject>(_ child: T) {
+            child.objectWillChange
+                .sink { [weak self] _ in
+                    Task { @MainActor [weak self] in self?.objectWillChange.send() }
+                }
+                .store(in: &nestedSubs)
+        }
+        forward(logWatcher)
+        forward(discordRPC)
+        forward(proManager)
+        forward(sessionStats)
+        forward(fastFlagsManager)
+        forward(modsManager)
+        forward(updateChecker)
+        forward(menuBarManager)
+        forward(perfOverlay)
+        forward(gameHistory)
     }
 
     var isRunning: Bool {
@@ -274,12 +315,50 @@ final class BypassViewModel: ObservableObject {
         persistSettings()
     }
 
+    func setAccentColor(_ hex: String) {
+        accentColorHex = hex
+        persistSettings()
+    }
+
+    func setAutoRejoin(_ enabled: Bool) {
+        autoRejoinEnabled = enabled
+        persistSettings()
+    }
+
+    func setDNSPreCache(_ enabled: Bool) {
+        dnsPreCacheEnabled = enabled
+        persistSettings()
+    }
+
+    func setProcessBoost(_ enabled: Bool) {
+        processBoostEnabled = enabled
+        persistSettings()
+    }
+
+    func syncFPSFromFastFlags() {
+        if let flag = fastFlagsManager.flags.first(where: { $0.id == "DFIntTaskSchedulerTargetFps" }),
+           flag.isEnabled, let val = Int(flag.value) {
+            let clamped = (!proManager.canUseCustomFPS && val > proManager.freeFPSCap)
+                ? proManager.freeFPSCap : val
+            fpsTarget = clamped
+            if clamped != val,
+               let idx = fastFlagsManager.flags.firstIndex(where: { $0.id == "DFIntTaskSchedulerTargetFps" }) {
+                fastFlagsManager.flags[idx].value = String(clamped)
+            }
+        } else {
+            fpsTarget = 60
+        }
+        persistSettings()
+    }
+
     func setFPSTarget(_ newValue: Int) {
-        fpsTarget = newValue
+        let clamped = (!proManager.canUseCustomFPS && newValue > proManager.freeFPSCap)
+            ? proManager.freeFPSCap : newValue
+        fpsTarget = clamped
         if let idx = fastFlagsManager.flags.firstIndex(where: { $0.id == "DFIntTaskSchedulerTargetFps" }) {
-            fastFlagsManager.flags[idx].isEnabled = newValue != 60
-            fastFlagsManager.flags[idx].value = String(newValue)
-            if newValue != 60 && !fastFlagsManager.isEnabled {
+            fastFlagsManager.flags[idx].isEnabled = clamped != 60
+            fastFlagsManager.flags[idx].value = String(clamped)
+            if clamped != 60 && !fastFlagsManager.isEnabled {
                 fastFlagsManager.isEnabled = true
             }
         }
@@ -357,6 +436,175 @@ final class BypassViewModel: ObservableObject {
             }
         } catch {
             appendLog("Multi-instance setup failed: \(error.localizedDescription)")
+        }
+    }
+
+    func serverHop() {
+        guard isRunning, let placeId = logWatcher.currentPlaceId else {
+            appendLog("No active game to hop servers.")
+            return
+        }
+        if let url = URL(string: "roblox://placeId=\(placeId)") {
+            NSWorkspace.shared.open(url)
+            appendLog("Server hop initiated for PlaceId \(placeId).")
+        }
+    }
+
+    func smartJoin(placeId: String) {
+        guard isRunning else {
+            appendLog("Start a session first.")
+            return
+        }
+        guard proManager.canUseSmartJoin else {
+            appendLog("Smart join requires Pro.")
+            return
+        }
+        appendLog("Smart join: scanning servers for PlaceId \(placeId)...")
+        Task {
+            let best = await findLowestPingServer(placeId: placeId)
+            if let server = best {
+                appendLog("Best server: \(server.ip) (\(server.ping)ms) — joining...")
+                if let url = URL(string: "roblox://placeId=\(placeId)&gameInstanceId=\(server.jobId)") {
+                    NSWorkspace.shared.open(url)
+                }
+            } else {
+                appendLog("No servers found. Joining random.")
+                if let url = URL(string: "roblox://placeId=\(placeId)") {
+                    NSWorkspace.shared.open(url)
+                }
+            }
+        }
+    }
+
+    private func findLowestPingServer(placeId: String) async -> (jobId: String, ip: String, ping: Int)? {
+        guard let url = URL(string: "https://games.roblox.com/v1/games/\(placeId)/servers/0?sortOrder=2&excludeFullGames=true&limit=10") else { return nil }
+
+        guard let (data, _) = try? await URLSession.shared.data(from: url),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let servers = json["data"] as? [[String: Any]] else { return nil }
+
+        var results: [(jobId: String, ip: String, ping: Int)] = []
+
+        for server in servers.prefix(6) {
+            guard let jobId = server["id"] as? String else { continue }
+
+            let accessCode = server["accessCode"] as? String
+            if accessCode != nil { continue }
+
+            guard let playing = server["playing"] as? Int,
+                  let maxPlayers = server["maxPlayers"] as? Int,
+                  playing < maxPlayers else { continue }
+
+            if let ping = server["ping"] as? Double {
+                results.append((jobId: jobId, ip: "", ping: Int(ping)))
+            }
+        }
+
+        if results.isEmpty { return nil }
+        return results.min(by: { $0.ping < $1.ping })
+    }
+
+    func setVersionPinEnabled(_ enabled: Bool) {
+        guard !enabled || proManager.canUseVersionPinning else {
+            appendLog("Version pinning requires Pro.")
+            return
+        }
+        versionPinEnabled = enabled
+        persistSettings()
+    }
+
+    func setMenuBarMode(_ enabled: Bool) {
+        menuBarMode = enabled
+        menuBarManager.setEnabled(enabled, viewModel: self)
+        persistSettings()
+    }
+
+    func exportSettings() {
+        let panel = NSSavePanel()
+        panel.title = "Export SpoofTrap Settings"
+        panel.nameFieldStringValue = "SpoofTrap-Backup.spooftrap"
+        panel.allowedContentTypes = [.json]
+        panel.canCreateDirectories = true
+
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        var bundle: [String: Any] = [:]
+
+        if let data = try? Data(contentsOf: settingsURL),
+           let json = try? JSONSerialization.jsonObject(with: data) {
+            bundle["settings"] = json
+        }
+
+        let supportDir = settingsURL.deletingLastPathComponent()
+        for file in ["favorites.json", "mods_settings.json", "game_history.json"] {
+            let fileURL = supportDir.appendingPathComponent(file)
+            if let data = try? Data(contentsOf: fileURL),
+               let json = try? JSONSerialization.jsonObject(with: data) {
+                bundle[file.replacingOccurrences(of: ".json", with: "")] = json
+            }
+        }
+
+        if let ffData = try? JSONEncoder().encode(fastFlagsManager.flags) {
+            bundle["fastflags"] = try? JSONSerialization.jsonObject(with: ffData)
+        }
+
+        do {
+            let data = try JSONSerialization.data(withJSONObject: bundle, options: [.prettyPrinted, .sortedKeys])
+            try data.write(to: url, options: .atomic)
+            appendLog("Settings exported to \(url.lastPathComponent).")
+        } catch {
+            appendLog("Export failed: \(error.localizedDescription)")
+        }
+    }
+
+    func importSettings() {
+        let panel = NSOpenPanel()
+        panel.title = "Import SpoofTrap Settings"
+        panel.allowedContentTypes = [.json]
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+
+        guard panel.runModal() == .OK, let url = panel.url else { return }
+
+        do {
+            let data = try Data(contentsOf: url)
+            guard let bundle = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                appendLog("Invalid backup file.")
+                return
+            }
+
+            let supportDir = settingsURL.deletingLastPathComponent()
+            try FileManager.default.createDirectory(at: supportDir, withIntermediateDirectories: true)
+
+            if let settings = bundle["settings"] {
+                let settingsData = try JSONSerialization.data(withJSONObject: settings)
+                try settingsData.write(to: settingsURL, options: .atomic)
+            }
+
+            for key in ["favorites", "mods_settings", "game_history"] {
+                if let obj = bundle[key] {
+                    let fileData = try JSONSerialization.data(withJSONObject: obj)
+                    try fileData.write(to: supportDir.appendingPathComponent("\(key).json"), options: .atomic)
+                }
+            }
+
+            if let ffObj = bundle["fastflags"] {
+                let ffData = try JSONSerialization.data(withJSONObject: ffObj)
+                try ffData.write(to: supportDir.appendingPathComponent("fastflags.json"), options: .atomic)
+            }
+
+            isRestoringSettings = true
+            loadSettings()
+            fastFlagsManager = FastFlagsManager()
+            modsManager = ModsManager()
+            gameHistory = GameHistoryManager()
+            loadFavorites()
+            isRestoringSettings = false
+
+            appendLog("Settings imported from \(url.lastPathComponent).")
+        } catch {
+            appendLog("Import failed: \(error.localizedDescription)")
+            isRestoringSettings = false
         }
     }
 
@@ -448,6 +696,17 @@ final class BypassViewModel: ObservableObject {
         appendLog("Using spoofdpi: \(Self.displayPath(resolvedBinaryPath))")
         appendLog("Roblox path: \(robloxDisplayPath)")
 
+        if !proManager.isPro {
+            if let idx = fastFlagsManager.flags.firstIndex(where: { $0.id == "DFIntTaskSchedulerTargetFps" }) {
+                let val = Int(fastFlagsManager.flags[idx].value) ?? 60
+                if val > proManager.freeFPSCap {
+                    fastFlagsManager.flags[idx].value = String(proManager.freeFPSCap)
+                    fpsTarget = proManager.freeFPSCap
+                    appendLog("FPS capped to \(proManager.freeFPSCap) (free tier).")
+                }
+            }
+        }
+
         if fastFlagsManager.isEnabled && fastFlagsManager.enabledCount > 0 {
             if fastFlagsManager.applyToRoblox(appPath: robloxAppPath) {
                 appendLog("FastFlags applied: \(fastFlagsManager.enabledCount) flags")
@@ -457,7 +716,7 @@ final class BypassViewModel: ObservableObject {
         }
 
         if modsManager.isEnabled && modsManager.enabledCount > 0 {
-            let result = modsManager.applyMods(robloxAppPath: robloxAppPath)
+            let result = modsManager.applyMods(robloxAppPath: robloxAppPath, isProUser: proManager.isPro)
             if result.applied > 0 {
                 appendLog("Mods applied: \(result.applied) file(s)")
             }
@@ -466,11 +725,19 @@ final class BypassViewModel: ObservableObject {
             }
         }
         
+        if versionPinEnabled && proManager.canUseVersionPinning {
+            let pinResult = runShellSync("/bin/chmod", ["-R", "a-w", robloxAppPath])
+            appendLog(pinResult == 0 ? "Version pinned: Roblox.app set to read-only." : "Warning: Failed to pin Roblox version.")
+        }
+
         sessionStats.startSession(proxyMode: proxyScope.rawValue, preset: preset.rawValue)
         logWatcher.startWatching()
         discordRPC.connect()
         startAutoRejoinMonitor()
         startPresenceUpdater()
+        if dnsPreCacheEnabled && proManager.canUseDNSPreCache {
+            preResolveDNS()
+        }
 
         Task {
             await runPKill()
@@ -512,6 +779,13 @@ final class BypassViewModel: ObservableObject {
         if proxyScope == .system {
             restoreSystemProxyMode()
         }
+
+        if versionPinEnabled && proManager.canUseVersionPinning {
+            let unpinResult = runShellSync("/bin/chmod", ["-R", "u+w", robloxAppPath])
+            appendLog(unpinResult == 0 ? "Version unpinned: Roblox.app write access restored." : "Warning: Failed to unpin Roblox version.")
+        }
+
+        perfOverlay.hide()
 
         Task {
             try? await Task.sleep(nanoseconds: 700_000_000)
@@ -703,14 +977,44 @@ final class BypassViewModel: ObservableObject {
 
         do {
             try process.run()
-            appendLog("Roblox launched with proxy environment (PID: \(process.processIdentifier)).")
+            let pid = process.processIdentifier
+            appendLog("Roblox launched with proxy environment (PID: \(pid)).")
             sessionStats.markSuccess()
+            if processBoostEnabled && proManager.canUseProcessBoost {
+                boostProcessPriority(pid: pid)
+            }
         } catch {
             appendLog("Failed to launch Roblox: \(error.localizedDescription)")
             let fallbackResult = runTool("/usr/bin/open", ["-n", "-a", robloxAppPath])
             if fallbackResult.status == 0 {
                 appendLog("Fallback: Roblox launched via open command.")
                 sessionStats.markSuccess()
+            }
+        }
+    }
+
+    private func boostProcessPriority(pid: pid_t) {
+        Task.detached {
+            let pidStr = String(pid)
+
+            let renice = Process()
+            renice.executableURL = URL(fileURLWithPath: "/usr/bin/renice")
+            renice.arguments = ["-n", "-5", "-p", pidStr]
+            renice.standardOutput = FileHandle.nullDevice
+            renice.standardError = FileHandle.nullDevice
+            try? renice.run()
+            renice.waitUntilExit()
+
+            let taskpol = Process()
+            taskpol.executableURL = URL(fileURLWithPath: "/usr/sbin/taskpolicy")
+            taskpol.arguments = ["-b", "-p", pidStr]
+            taskpol.standardOutput = FileHandle.nullDevice
+            taskpol.standardError = FileHandle.nullDevice
+            try? taskpol.run()
+            taskpol.waitUntilExit()
+
+            await MainActor.run { [weak self] in
+                self?.appendLog("Process priority boosted for PID \(pid).")
             }
         }
     }
@@ -879,6 +1183,11 @@ final class BypassViewModel: ObservableObject {
         return (process.terminationStatus, output)
     }
 
+    @discardableResult
+    private func runShellSync(_ launchPath: String, _ arguments: [String]) -> Int32 {
+        runTool(launchPath, arguments).status
+    }
+
     private func markCustomSettings() {
         if preset != .custom {
             preset = .custom
@@ -954,7 +1263,13 @@ final class BypassViewModel: ObservableObject {
         appLaunchDelay = stored.appLaunchDelay
         reducedMotion = stored.reducedMotion ?? false
         fpsTarget = stored.fpsTarget ?? 60
+        accentColorHex = stored.accentColorHex ?? "#73DBFF"
         updateChannel = stored.updateChannel ?? "LIVE"
+        menuBarMode = stored.menuBarMode ?? false
+        versionPinEnabled = stored.versionPinEnabled ?? false
+        autoRejoinEnabled = stored.autoRejoinEnabled ?? false
+        dnsPreCacheEnabled = stored.dnsPreCacheEnabled ?? true
+        processBoostEnabled = stored.processBoostEnabled ?? true
         loadFavorites()
     }
 
@@ -973,7 +1288,13 @@ final class BypassViewModel: ObservableObject {
             appLaunchDelay: appLaunchDelay,
             reducedMotion: reducedMotion,
             fpsTarget: fpsTarget,
-            updateChannel: updateChannel
+            accentColorHex: accentColorHex,
+            updateChannel: updateChannel,
+            menuBarMode: menuBarMode,
+            versionPinEnabled: versionPinEnabled,
+            autoRejoinEnabled: autoRejoinEnabled,
+            dnsPreCacheEnabled: dnsPreCacheEnabled,
+            processBoostEnabled: processBoostEnabled
         )
 
         do {
@@ -1031,6 +1352,30 @@ final class BypassViewModel: ObservableObject {
         logs.append(stamped)
     }
 
+    private func preResolveDNS() {
+        let domains = [
+            "roblox.com", "www.roblox.com", "apis.roblox.com",
+            "auth.roblox.com", "assetdelivery.roblox.com",
+            "clientsettings.roblox.com", "users.roblox.com",
+            "games.roblox.com", "friends.roblox.com",
+            "realtime-signalr.roblox.com", "avatar.roblox.com",
+            "catalog.roblox.com", "locale.roblox.com",
+            "metrics.roblox.com", "notifications.roblox.com",
+            "ephemeralcounters.api.roblox.com",
+            "thumbnails.roblox.com", "economy.roblox.com"
+        ]
+        let count = domains.count
+        Task.detached {
+            for domain in domains {
+                let host = CFHostCreateWithName(nil, domain as CFString).takeRetainedValue()
+                CFHostStartInfoResolution(host, .addresses, nil)
+            }
+            await MainActor.run { [weak self] in
+                self?.appendLog("DNS pre-cached: \(count) Roblox domains resolved.")
+            }
+        }
+    }
+
     private func startAutoRejoinMonitor() {
         autoRejoinTask?.cancel()
         autoRejoinTask = Task { [weak self] in
@@ -1085,9 +1430,11 @@ final class BypassViewModel: ObservableObject {
 
     func saveFavorites() {
         do {
+            try FileManager.default.createDirectory(at: favoritesURL.deletingLastPathComponent(), withIntermediateDirectories: true)
             let data = try JSONEncoder().encode(favorites)
             try data.write(to: favoritesURL, options: .atomic)
-        } catch {}
+        } catch {
+        }
     }
 
     nonisolated static func locateResourceBundle() -> Bundle? {

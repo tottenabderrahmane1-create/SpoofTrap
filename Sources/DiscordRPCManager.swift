@@ -10,11 +10,28 @@ final class DiscordRPCManager: ObservableObject {
     private var updateTask: Task<Void, Never>?
     private var nonce = 0
     private let clientId = "1192124994039697408"
+    private let socketLock = NSLock()
 
     func connect() {
         guard isEnabled else { return }
+        let cid = clientId
         Task.detached { [weak self] in
-            await self?.doConnect()
+            guard let self else { return }
+            let fd = await self.tryConnect()
+            guard fd >= 0 else { return }
+
+            await MainActor.run {
+                self.socket = fd
+            }
+
+            let ok = self.performHandshake(fd: fd, clientId: cid)
+            await MainActor.run {
+                self.isConnected = ok
+                if !ok {
+                    Darwin.close(fd)
+                    self.socket = -1
+                }
+            }
         }
     }
 
@@ -22,7 +39,7 @@ final class DiscordRPCManager: ObservableObject {
         updateTask?.cancel()
         updateTask = nil
         if socket >= 0 {
-            close(socket)
+            Darwin.close(socket)
             socket = -1
         }
         isConnected = false
@@ -58,7 +75,10 @@ final class DiscordRPCManager: ObservableObject {
             "nonce": "\(nextNonce())"
         ]
 
-        sendFrame(opcode: 1, payload: payload)
+        let fd = socket
+        Task.detached { [weak self] in
+            self?.sendFrameSync(fd: fd, opcode: 1, payload: payload)
+        }
     }
 
     func clearPresence() {
@@ -68,12 +88,15 @@ final class DiscordRPCManager: ObservableObject {
             "args": ["pid": ProcessInfo.processInfo.processIdentifier],
             "nonce": "\(nextNonce())"
         ]
-        sendFrame(opcode: 1, payload: payload)
+        let fd = socket
+        Task.detached { [weak self] in
+            self?.sendFrameSync(fd: fd, opcode: 1, payload: payload)
+        }
     }
 
-    // MARK: - IPC
+    // MARK: - IPC (runs off MainActor)
 
-    private func doConnect() async {
+    private nonisolated func tryConnect() async -> Int32 {
         for i in 0..<10 {
             let path = ipcPath(i)
             let fd = Darwin.socket(AF_UNIX, SOCK_STREAM, 0)
@@ -98,33 +121,31 @@ final class DiscordRPCManager: ObservableObject {
             }
 
             if result == 0 {
-                await MainActor.run { self.socket = fd }
-                await handshake()
-                return
+                return fd
             } else {
                 Darwin.close(fd)
             }
         }
+        return -1
     }
 
-    private func handshake() async {
+    private nonisolated func performHandshake(fd: Int32, clientId: String) -> Bool {
         let payload: [String: Any] = ["v": 1, "client_id": clientId]
-        sendFrame(opcode: 0, payload: payload)
+        sendFrameSync(fd: fd, opcode: 0, payload: payload)
 
         var buffer = [UInt8](repeating: 0, count: 4096)
-        let bytesRead = read(socket, &buffer, buffer.count)
-        if bytesRead > 8 {
-            await MainActor.run { self.isConnected = true }
-        }
+        let bytesRead = read(fd, &buffer, buffer.count)
+        return bytesRead > 8
     }
 
-    private func sendFrame(opcode: UInt32, payload: [String: Any]) {
-        guard socket >= 0,
+    private nonisolated func sendFrameSync(fd: Int32, opcode: UInt32, payload: [String: Any]) {
+        guard fd >= 0,
               let jsonData = try? JSONSerialization.data(withJSONObject: payload) else { return }
 
         var header = [UInt8](repeating: 0, count: 8)
         header.withUnsafeMutableBufferPointer { ptr in
-            ptr.baseAddress!.withMemoryRebound(to: UInt32.self, capacity: 2) { intPtr in
+            guard let base = ptr.baseAddress else { return }
+            base.withMemoryRebound(to: UInt32.self, capacity: 2) { intPtr in
                 intPtr[0] = opcode.littleEndian
                 intPtr[1] = UInt32(jsonData.count).littleEndian
             }
@@ -132,16 +153,20 @@ final class DiscordRPCManager: ObservableObject {
 
         var frame = Data(header)
         frame.append(jsonData)
+        socketLock.lock()
         frame.withUnsafeBytes { ptr in
-            _ = write(socket, ptr.baseAddress!, frame.count)
+            guard let base = ptr.baseAddress else { return }
+            _ = Darwin.write(fd, base, frame.count)
         }
+        socketLock.unlock()
     }
 
-    private func ipcPath(_ index: Int) -> String {
-        let tmpDir = ProcessInfo.processInfo.environment["TMPDIR"]
-            ?? ProcessInfo.processInfo.environment["XDG_RUNTIME_DIR"]
-            ?? "/tmp"
-        return "\(tmpDir)discord-ipc-\(index)"
+    private nonisolated func ipcPath(_ index: Int) -> String {
+        let tmpDir = ProcessInfo.processInfo.environment["XDG_RUNTIME_DIR"]
+            ?? ProcessInfo.processInfo.environment["TMPDIR"]
+            ?? NSTemporaryDirectory()
+        let base = tmpDir.hasSuffix("/") ? tmpDir : tmpDir + "/"
+        return "\(base)discord-ipc-\(index)"
     }
 
     private func nextNonce() -> Int {

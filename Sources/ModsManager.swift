@@ -55,12 +55,12 @@ final class ModsManager: ObservableObject {
         ModCategory(
             id: "app_icon",
             name: "App Icon",
-            description: "Swap the Roblox in-game icon",
+            description: "Replace the Roblox icon (Dock + in-game)",
             icon: "app.badge.fill",
             relativePaths: [
                 "content/textures/ui/icon_app-512.png"
             ],
-            allowedExtensions: ["png"],
+            allowedExtensions: ["png", "icns"],
             requiresPro: true
         ),
         ModCategory(
@@ -86,6 +86,18 @@ final class ModsManager: ObservableObject {
                 "ExtraContent/places/Mobile.rbxl"
             ],
             allowedExtensions: ["rbxl"],
+            requiresPro: true
+        ),
+        ModCategory(
+            id: "loading_screen",
+            name: "Loading Screen",
+            description: "Replace the Roblox loading background textures",
+            icon: "photo.fill",
+            relativePaths: [
+                "content/textures/loading/darkLoadingTexture.png",
+                "content/textures/loading/loadingTexture.png"
+            ],
+            allowedExtensions: ["png", "jpg"],
             requiresPro: true
         )
     ]
@@ -178,7 +190,7 @@ final class ModsManager: ObservableObject {
 
     // MARK: - Apply mods before Roblox launch
 
-    func applyMods(robloxAppPath: String) -> (applied: Int, failed: Int) {
+    func applyMods(robloxAppPath: String, isProUser: Bool = false) -> (applied: Int, failed: Int) {
         guard isEnabled else { return (0, 0) }
 
         let resourcesBase = (robloxAppPath as NSString).appendingPathComponent("Contents/Resources")
@@ -188,6 +200,7 @@ final class ModsManager: ObservableObject {
 
         for mod in installedMods where mod.isEnabled {
             guard let cat = category(for: mod.categoryId) else { continue }
+            if cat.requiresPro && !isProUser { continue }
 
             let sourceFile: String
             if let custom = mod.customFilePath {
@@ -208,16 +221,16 @@ final class ModsManager: ObservableObject {
             }
 
             for relPath in cat.relativePaths {
-                // app_icon textures live in Contents/MacOS, everything else in Contents/Resources
                 let base = cat.id == "app_icon" ? macosBase : resourcesBase
                 let targetPath = (base as NSString).appendingPathComponent(relPath)
                 let backupPath = backupPathFor(target: targetPath)
 
-                if !fileManager.fileExists(atPath: backupPath) && fileManager.fileExists(atPath: targetPath) {
-                    let backupDir = (backupPath as NSString).deletingLastPathComponent
-                    try? fileManager.createDirectory(atPath: backupDir, withIntermediateDirectories: true)
-                    try? fileManager.copyItem(atPath: targetPath, toPath: backupPath)
-
+                if fileManager.fileExists(atPath: targetPath) {
+                    if !fileManager.fileExists(atPath: backupPath) {
+                        let backupDir = (backupPath as NSString).deletingLastPathComponent
+                        try? fileManager.createDirectory(atPath: backupDir, withIntermediateDirectories: true)
+                        try? fileManager.copyItem(atPath: targetPath, toPath: backupPath)
+                    }
                     if let idx = installedMods.firstIndex(where: { $0.id == mod.id }) {
                         installedMods[idx].originalBackedUp = true
                     }
@@ -236,15 +249,108 @@ final class ModsManager: ObservableObject {
                     failed += 1
                 }
             }
+
+            if cat.id == "app_icon" {
+                if applyDockIcon(sourceFile: sourceFile, robloxAppPath: robloxAppPath) {
+                    applied += 1
+                }
+                clearIconCache()
+            }
+        }
+
+        if applied > 0 {
+            resignBundle(robloxAppPath)
         }
 
         saveSettings()
         return (applied, failed)
     }
 
+    private func applyDockIcon(sourceFile: String, robloxAppPath: String) -> Bool {
+        let icnsPath = (robloxAppPath as NSString)
+            .appendingPathComponent("Contents/Resources/AppIcon.icns")
+        let backupPath = backupPathFor(target: icnsPath)
+
+        if fileManager.fileExists(atPath: icnsPath) && !fileManager.fileExists(atPath: backupPath) {
+            let backupDir = (backupPath as NSString).deletingLastPathComponent
+            try? fileManager.createDirectory(atPath: backupDir, withIntermediateDirectories: true)
+            try? fileManager.copyItem(atPath: icnsPath, toPath: backupPath)
+        }
+
+        if sourceFile.hasSuffix(".icns") {
+            try? fileManager.removeItem(atPath: icnsPath)
+            return (try? fileManager.copyItem(atPath: sourceFile, toPath: icnsPath)) != nil
+        }
+
+        let tempIconset = NSTemporaryDirectory() + "SpoofTrap_icon.iconset"
+        try? fileManager.removeItem(atPath: tempIconset)
+        try? fileManager.createDirectory(atPath: tempIconset, withIntermediateDirectories: true)
+
+        let baseSizes = [16, 32, 128, 256, 512]
+        for base in baseSizes {
+            for scale in [1, 2] {
+                let px = base * scale
+                let name = scale == 1
+                    ? "icon_\(base)x\(base).png"
+                    : "icon_\(base)x\(base)@2x.png"
+                let dest = "\(tempIconset)/\(name)"
+                let proc = Process()
+                proc.executableURL = URL(fileURLWithPath: "/usr/bin/sips")
+                proc.arguments = ["-z", "\(px)", "\(px)", sourceFile, "--out", dest]
+                proc.standardOutput = FileHandle.nullDevice
+                proc.standardError = FileHandle.nullDevice
+                try? proc.run()
+                proc.waitUntilExit()
+            }
+        }
+
+        let tempIcns = NSTemporaryDirectory() + "SpoofTrap_AppIcon.icns"
+        try? fileManager.removeItem(atPath: tempIcns)
+        let iconutil = Process()
+        iconutil.executableURL = URL(fileURLWithPath: "/usr/bin/iconutil")
+        iconutil.arguments = ["-c", "icns", tempIconset, "-o", tempIcns]
+        iconutil.standardOutput = FileHandle.nullDevice
+        iconutil.standardError = FileHandle.nullDevice
+        try? iconutil.run()
+        iconutil.waitUntilExit()
+
+        guard fileManager.fileExists(atPath: tempIcns) else { return false }
+
+        do {
+            try fileManager.removeItem(atPath: icnsPath)
+            try fileManager.copyItem(atPath: tempIcns, toPath: icnsPath)
+            try? fileManager.removeItem(atPath: tempIconset)
+            try? fileManager.removeItem(atPath: tempIcns)
+            return true
+        } catch {
+            return false
+        }
+    }
+
+    private func resignBundle(_ appPath: String) {
+        let proc = Process()
+        proc.executableURL = URL(fileURLWithPath: "/usr/bin/codesign")
+        proc.arguments = ["--force", "--deep", "--sign", "-", appPath]
+        proc.standardOutput = FileHandle.nullDevice
+        proc.standardError = FileHandle.nullDevice
+        try? proc.run()
+        proc.waitUntilExit()
+    }
+
+    private func clearIconCache() {
+        let proc = Process()
+        proc.executableURL = URL(fileURLWithPath: "/usr/bin/killall")
+        proc.arguments = ["Dock"]
+        proc.standardOutput = FileHandle.nullDevice
+        proc.standardError = FileHandle.nullDevice
+        try? proc.run()
+        proc.waitUntilExit()
+    }
+
     func restoreOriginals(robloxAppPath: String) {
         let resourcesBase = (robloxAppPath as NSString).appendingPathComponent("Contents/Resources")
         let macosBase = (robloxAppPath as NSString).appendingPathComponent("Contents/MacOS")
+        var restoredIcon = false
 
         for cat in Self.categories {
             for relPath in cat.relativePaths {
@@ -258,6 +364,23 @@ final class ModsManager: ObservableObject {
                     try? fileManager.removeItem(atPath: backupPath)
                 }
             }
+
+            if cat.id == "app_icon" {
+                let icnsPath = (robloxAppPath as NSString)
+                    .appendingPathComponent("Contents/Resources/AppIcon.icns")
+                let icnsBackup = backupPathFor(target: icnsPath)
+                if fileManager.fileExists(atPath: icnsBackup) {
+                    try? fileManager.removeItem(atPath: icnsPath)
+                    try? fileManager.copyItem(atPath: icnsBackup, toPath: icnsPath)
+                    try? fileManager.removeItem(atPath: icnsBackup)
+                    restoredIcon = true
+                }
+            }
+        }
+
+        if restoredIcon {
+            resignBundle(robloxAppPath)
+            clearIconCache()
         }
 
         for i in installedMods.indices {
