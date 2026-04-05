@@ -395,21 +395,31 @@ final class BypassViewModel: ObservableObject {
         }
     }
 
-    static func fetchGameThumbnail(placeId: String, proxyPort: Int? = nil) async -> String? {
+    static func fetchGameThumbnails(placeIds: [String], proxyPort: Int? = nil) async -> [String: String] {
+        guard !placeIds.isEmpty else { return [:] }
         let session = makeProxiedSession(proxyPort: proxyPort)
-        guard let detailURL = URL(string: "https://games.roblox.com/v1/games/multiget-place-details?placeIds=\(placeId)") else { return nil }
-        guard let (data, _) = try? await session.data(from: detailURL),
-              let json = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
-              let first = json.first,
-              let universeId = first["universeId"] as? Int else { return nil }
 
-        guard let thumbURL = URL(string: "https://thumbnails.roblox.com/v1/games/icons?universeIds=\(universeId)&returnPolicy=PlaceHolder&size=150x150&format=Png&isCircular=false") else { return nil }
+        // Use the direct places endpoint for game icons
+        let idsString = placeIds.joined(separator: ",")
+        guard let thumbURL = URL(string: "https://thumbnails.roblox.com/v1/places/gameicons?placeIds=\(idsString)&returnPolicy=PlaceHolder&size=150x150&format=Png&isCircular=false") else { return [:] }
+
         guard let (tData, _) = try? await session.data(from: thumbURL),
               let tJson = try? JSONSerialization.jsonObject(with: tData) as? [String: Any],
-              let items = tJson["data"] as? [[String: Any]],
-              let item = items.first,
-              let imageUrl = item["imageUrl"] as? String else { return nil }
-        return imageUrl
+              let items = tJson["data"] as? [[String: Any]] else { return [:] }
+
+        var result: [String: String] = [:]
+        for item in items {
+            if let targetId = item["targetId"] as? Int,
+               let imageUrl = item["imageUrl"] as? String {
+                result[String(targetId)] = imageUrl
+            }
+        }
+        return result
+    }
+
+    static func fetchGameThumbnail(placeId: String, proxyPort: Int? = nil) async -> String? {
+        let result = await fetchGameThumbnails(placeIds: [placeId], proxyPort: proxyPort)
+        return result[placeId]
     }
 
     private static func makeProxiedSession(proxyPort: Int?) -> URLSession {
@@ -1535,8 +1545,24 @@ final class BypassViewModel: ObservableObject {
               let saved = try? JSONDecoder().decode([FavoriteGame].self, from: data) else { return }
         favorites = saved
 
-        for fav in favorites where fav.thumbnailURL == nil {
-            fetchThumbnailForFavorite(placeId: fav.placeId)
+        let missingThumbnails = favorites.filter { $0.thumbnailURL == nil }.map { $0.placeId }
+        guard !missingThumbnails.isEmpty else { return }
+
+        Task {
+            let thumbs = await Self.fetchGameThumbnails(placeIds: missingThumbnails, proxyPort: gameSearch.proxyPort)
+            guard !thumbs.isEmpty else { return }
+
+            var updated = false
+            for i in favorites.indices {
+                if let thumb = thumbs[favorites[i].placeId], favorites[i].thumbnailURL == nil {
+                    favorites[i].thumbnailURL = thumb
+                    updated = true
+                }
+            }
+
+            if updated {
+                saveFavorites()
+            }
         }
     }
 
