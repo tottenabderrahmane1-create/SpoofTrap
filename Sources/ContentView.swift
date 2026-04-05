@@ -2543,7 +2543,7 @@ struct ContentView: View {
 
                         Button {
                             let result = viewModel.cacheCleaner.cleanAll()
-                            viewModel.appendLogPublic("Cache cleaned: \(result.files) files, \(CacheCleanerManager.formatBytes(result.freed)) freed")
+                            viewModel.appendLog("Cache cleaned: \(result.files) files, \(CacheCleanerManager.formatBytes(result.freed)) freed")
                         } label: {
                             HStack(spacing: 4) {
                                 Image(systemName: "trash.fill")

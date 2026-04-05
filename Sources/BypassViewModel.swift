@@ -1450,11 +1450,7 @@ final class BypassViewModel: ObservableObject {
         path.replacingOccurrences(of: NSHomeDirectory(), with: "~")
     }
 
-    func appendLogPublic(_ message: String) {
-        appendLog(message)
-    }
-
-    private func appendLog(_ message: String) {
+    func appendLog(_ message: String) {
         let stamped = "[\(timestampFormatter.string(from: Date()))] \(message)"
         logs.append(stamped)
     }
