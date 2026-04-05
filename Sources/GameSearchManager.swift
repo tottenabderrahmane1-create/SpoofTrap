@@ -56,7 +56,10 @@ final class GameSearchManager: ObservableObject {
 
         searchTask = Task {
             try? await Task.sleep(nanoseconds: 300_000_000)
-            guard !Task.isCancelled else { return }
+            guard !Task.isCancelled else {
+                isSearching = false
+                return
+            }
 
             let session = makeSession()
             let encoded = trimmed.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? trimmed

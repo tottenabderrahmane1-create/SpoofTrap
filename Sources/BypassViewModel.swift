@@ -387,7 +387,7 @@ final class BypassViewModel: ObservableObject {
 
     func fetchThumbnailForFavorite(placeId: String) {
         Task {
-            guard let thumb = await Self.fetchGameThumbnail(placeId: placeId) else { return }
+            guard let thumb = await Self.fetchGameThumbnail(placeId: placeId, proxyPort: gameSearch.proxyPort) else { return }
             if let idx = favorites.firstIndex(where: { $0.placeId == placeId && $0.thumbnailURL == nil }) {
                 favorites[idx].thumbnailURL = thumb
                 saveFavorites()
@@ -395,20 +395,37 @@ final class BypassViewModel: ObservableObject {
         }
     }
 
-    static func fetchGameThumbnail(placeId: String) async -> String? {
+    static func fetchGameThumbnail(placeId: String, proxyPort: Int? = nil) async -> String? {
+        let session = makeProxiedSession(proxyPort: proxyPort)
         guard let detailURL = URL(string: "https://games.roblox.com/v1/games/multiget-place-details?placeIds=\(placeId)") else { return nil }
-        guard let (data, _) = try? await URLSession.shared.data(from: detailURL),
+        guard let (data, _) = try? await session.data(from: detailURL),
               let json = try? JSONSerialization.jsonObject(with: data) as? [[String: Any]],
               let first = json.first,
               let universeId = first["universeId"] as? Int else { return nil }
 
         guard let thumbURL = URL(string: "https://thumbnails.roblox.com/v1/games/icons?universeIds=\(universeId)&returnPolicy=PlaceHolder&size=150x150&format=Png&isCircular=false") else { return nil }
-        guard let (tData, _) = try? await URLSession.shared.data(from: thumbURL),
+        guard let (tData, _) = try? await session.data(from: thumbURL),
               let tJson = try? JSONSerialization.jsonObject(with: tData) as? [String: Any],
               let items = tJson["data"] as? [[String: Any]],
               let item = items.first,
               let imageUrl = item["imageUrl"] as? String else { return nil }
         return imageUrl
+    }
+
+    private static func makeProxiedSession(proxyPort: Int?) -> URLSession {
+        let config = URLSessionConfiguration.ephemeral
+        config.timeoutIntervalForRequest = 10
+        if let port = proxyPort {
+            config.connectionProxyDictionary = [
+                kCFNetworkProxiesHTTPEnable: true,
+                kCFNetworkProxiesHTTPProxy: "127.0.0.1",
+                kCFNetworkProxiesHTTPPort: port,
+                kCFNetworkProxiesHTTPSEnable: true,
+                kCFNetworkProxiesHTTPSProxy: "127.0.0.1",
+                kCFNetworkProxiesHTTPSPort: port,
+            ]
+        }
+        return URLSession(configuration: config)
     }
 
     func removeFavorite(_ fav: FavoriteGame) {
@@ -828,16 +845,11 @@ final class BypassViewModel: ObservableObject {
         launchTask?.cancel()
         launchTask = nil
         appendLog("Stopping SpoofTrap session.")
-        
+
+        let dur = sessionStats.currentSession?.duration ?? 0
         sessionStats.endSession()
-        autoRejoinTask?.cancel()
-        presenceTask?.cancel()
-        logWatcher.stopWatching()
-        discordRPC.clearPresence()
-        discordRPC.disconnect()
 
         if let lastGame = logWatcher.currentPlaceId {
-            let dur = sessionStats.currentSession?.duration ?? 0
             gameHistory.recordSession(
                 gameName: logWatcher.currentGameName ?? "Unknown Game",
                 placeId: lastGame,
@@ -846,6 +858,12 @@ final class BypassViewModel: ObservableObject {
                 duration: dur
             )
         }
+
+        autoRejoinTask?.cancel()
+        presenceTask?.cancel()
+        logWatcher.stopWatching()
+        discordRPC.clearPresence()
+        discordRPC.disconnect()
 
         if let process = spoofProcess, process.isRunning {
             process.terminate()
@@ -1101,17 +1119,21 @@ final class BypassViewModel: ObservableObject {
     }
 
     private func runPKill() async {
-        let process = Process()
-        process.executableURL = URL(fileURLWithPath: "/usr/bin/pkill")
-        process.arguments = ["-f", "spoofdpi"]
-
-        do {
-            try process.run()
-            process.waitUntilExit()
-            appendLog("pkill -f spoofdpi completed with code \(process.terminationStatus).")
-        } catch {
-            appendLog("Failed to execute pkill: \(error.localizedDescription)")
+        let status: Int32 = await withCheckedContinuation { continuation in
+            Task.detached {
+                let process = Process()
+                process.executableURL = URL(fileURLWithPath: "/usr/bin/pkill")
+                process.arguments = ["-f", "spoofdpi"]
+                do {
+                    try process.run()
+                    process.waitUntilExit()
+                    continuation.resume(returning: process.terminationStatus)
+                } catch {
+                    continuation.resume(returning: -1)
+                }
+            }
         }
+        appendLog("pkill -f spoofdpi completed with code \(status).")
     }
 
     private func applySystemProxyMode() {
