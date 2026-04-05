@@ -74,7 +74,7 @@ final class SessionStats: ObservableObject {
     }
     
     var totalPlayTimeFormatted: String {
-        formatDuration(totalPlayTime)
+        totalPlayTime.formattedDuration()
     }
     
     var todaySessions: Int {
@@ -92,7 +92,7 @@ final class SessionStats: ObservableObject {
     }
     
     var todayPlayTimeFormatted: String {
-        formatDuration(todayPlayTime)
+        todayPlayTime.formattedDuration()
     }
     
     var weekSessions: Int {
@@ -107,7 +107,7 @@ final class SessionStats: ObservableObject {
     }
     
     var averageSessionFormatted: String {
-        formatDuration(averageSessionLength)
+        averageSessionLength.formattedDuration()
     }
     
     func startSession(proxyMode: String, preset: String) {
@@ -146,18 +146,6 @@ final class SessionStats: ObservableObject {
         saveHistory()
     }
     
-    private func formatDuration(_ duration: TimeInterval) -> String {
-        let hours = Int(duration) / 3600
-        let minutes = (Int(duration) % 3600) / 60
-        
-        if hours > 0 {
-            return String(format: "%dh %dm", hours, minutes)
-        } else if minutes > 0 {
-            return String(format: "%dm", minutes)
-        } else {
-            return "< 1m"
-        }
-    }
     
     private func calculateStats() {
         totalSessions = sessionHistory.count
