@@ -28,7 +28,7 @@ final class ModsManager: ObservableObject {
         didSet { saveSettings() }
     }
 
-    private let fileManager = FileManager.default
+    private let fileManager: FileManager
 
     static let categories: [ModCategory] = [
         ModCategory(
@@ -102,7 +102,8 @@ final class ModsManager: ObservableObject {
         )
     ]
 
-    init() {
+    init(fileManager: FileManager = .default) {
+        self.fileManager = fileManager
         loadSettings()
     }
 
