@@ -53,7 +53,7 @@ SpoofTrap **bundles** the `spoofdpi` binary so users do not download it separate
 - Put or replace the macOS `spoofdpi` at **`Sources/Resources/bin/spoofdpi`** (tracked in git).
 - Run **`scripts/package_macos_app.sh`** — it builds the app, copies the executable into `dist/SpoofTrap.app`, copies **`Resources/bin/spoofdpi`** into the bundle, syncs the SwiftPM resource bundle, then **`codesign --force --deep --sign -`** and **`xattr -cr`**.
 
-After that, recreate **ZIP / DMG / PKG** from `dist/SpoofTrap.app` as you usually do for releases, and update `docs/dist/latest.json` hashes.
+Then run **`scripts/build_installers.sh`** — it builds **ZIP / DMG / PKG** in `dist/`, copies them into **`docs/dist/`** (what GitHub Pages serves), and prints **SHA-256** lines for `docs/dist/latest.json`.
 
 ## Notes
 
