@@ -1,6 +1,6 @@
 const macosFallbackRelease = {
-  version: "1.7.1",
-  generatedAt: "2026-04-12T12:00:00Z",
+  version: "1.7.2",
+  generatedAt: "2026-04-12T20:00:00Z",
   artifacts: {
     pkg: {
       file: "SpoofTrap.pkg",
