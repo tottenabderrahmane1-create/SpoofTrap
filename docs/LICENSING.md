@@ -47,6 +47,8 @@ Complete implementation guide for the SpoofTrap license key system using Supabas
 
 ### Plans
 
+**Note:** Keys may be issued through Discord or other community flows; the table below is optional reference pricing only and may not match how keys are distributed in practice.
+
 | Plan | Duration | Activations | Price (suggested) |
 |------|----------|-------------|-------------------|
 | Pro Monthly | 30 days | 2 devices | $4.99/mo |

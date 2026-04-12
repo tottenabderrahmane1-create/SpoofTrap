@@ -63,9 +63,10 @@ final class UpdateChecker: ObservableObject {
             return
         }
 
+        // Prefer the project site first so updates work when GitHub is blocked on the same network.
         let candidates = [
-            "https://github.com/spooftrap-app/SpoofTrap-site/releases/download/v\(latestVersion ?? "")/\(zipFile)",
-            "https://spooftrap.port0.org/dist/\(zipFile)"
+            "https://spooftrap.port0.org/dist/\(zipFile)",
+            "https://github.com/spooftrap-app/SpoofTrap-site/releases/download/v\(latestVersion ?? "")/\(zipFile)"
         ]
 
         guard let url = candidates.compactMap({ URL(string: $0) }).first else {

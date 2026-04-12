@@ -13,7 +13,9 @@ SpoofTrap is a macOS Roblox launcher built for restrictive networks, cleaner set
 <p align="center">
   <a href="https://spooftrap.port0.org"><strong>Main site</strong></a>
   ·
-  <a href="dist/SpoofTrap-macOS-2026.03.10.5.dmg"><strong>Download for macOS</strong></a>
+  <a href="https://spooftrap.port0.org/#download"><strong>Download for macOS</strong></a>
+  ·
+  <a href="https://spooftrap.port0.org/pricing.html"><strong>Free vs Pro</strong></a>
   ·
   <a href="https://spooftrap.port0.org/windows.html"><strong>Windows beta</strong></a>
 </p>
@@ -26,11 +28,10 @@ SpoofTrap is a macOS Roblox launcher built for restrictive networks, cleaner set
 
 | Platform | Status | Link |
 | --- | --- | --- |
-| macOS | Available now | [DMG](dist/SpoofTrap-macOS-2026.03.10.5.dmg) |
-| macOS alternate builds | Available now | [PKG](dist/SpoofTrap-macOS-2026.03.10.5.pkg) · [ZIP](dist/SpoofTrap-macOS-2026.03.10.5.zip) |
+| macOS | Available now | [Download hub](https://spooftrap.port0.org/#download) · [DMG](https://spooftrap.port0.org/dist/SpoofTrap.dmg) · [ZIP](https://spooftrap.port0.org/dist/SpoofTrap.zip) · [PKG](https://spooftrap.port0.org/dist/SpoofTrap.pkg) |
 | Windows beta | Public beta | [Windows page](https://spooftrap.port0.org/windows.html) · [Download](https://bit.ly/4bY0AZj) · [Discord](https://discord.gg/32UmsRfVha) |
 
-DMG is the easiest install. PKG and ZIP stay available if you need a different format.
+DMG is the easiest install. The site reads **`docs/dist/latest.json`** for the current version and checksums. Repo copies of installers also live under **`docs/dist/`** and **`dist/`** after you run the packaging scripts.
 
 ## Quick Read
 
@@ -43,6 +44,7 @@ DMG is the easiest install. PKG and ZIP stay available if you need a different f
 
 - Main site: [spooftrap.port0.org](https://spooftrap.port0.org)
 - macOS page: [spooftrap.port0.org/macos.html](https://spooftrap.port0.org/macos.html)
+- Free vs Pro: [spooftrap.port0.org/pricing.html](https://spooftrap.port0.org/pricing.html)
 - Windows page: [spooftrap.port0.org/windows.html](https://spooftrap.port0.org/windows.html)
 - Socials: [spooftrap.port0.org/socials.html](https://spooftrap.port0.org/socials.html)
 

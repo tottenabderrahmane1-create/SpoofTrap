@@ -45,4 +45,4 @@ codesign -vvv "$APP"
 
 echo "OK: $APP"
 echo "    bundled: $RES_BIN/spoofdpi ($(wc -c < "$RES_BIN/spoofdpi" | tr -d ' ') bytes)"
-echo "Next: bump Info.plist version if needed, then ditto/hdiutil/pkgbuild for ZIP/DMG/PKG (see README)."
+echo "Next: bump Info.plist version if needed, run scripts/build_installers.sh, then update docs/dist/latest.json (see README)."
