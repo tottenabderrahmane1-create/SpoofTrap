@@ -1,16 +1,19 @@
 import SwiftUI
 
 enum FirstLaunchDisclaimer {
-    /// Shown once on first launch before onboarding. Calm copy: responsibility + local rules, not legal advice.
     static let paragraph = """
-SpoofTrap helps you run Roblox when your network makes that harder. By continuing, you agree you are responsible for following the laws and rules that apply to you—including your school or employer’s policies, your internet provider’s terms, and Roblox’s Terms of Use—and that you will only use the app where you are allowed to. This is not legal advice; if you are unsure, check with a parent, guardian, or other appropriate person before you continue.
+SpoofTrap is a privacy and anti-censorship tool. It restores your access to Roblox on networks where it has been blocked. SpoofTrap does not modify Roblox, does not interact with your Roblox account, and does not provide any in-game advantage.
+
+You are responsible for ensuring that your use of this software complies with the laws of your country and the rules of any networks you connect to. Some jurisdictions restrict tools that bypass network controls. Use SpoofTrap only where you are authorized to do so.
+
+By clicking ‘I Understand and Agree’ you confirm that you have read and accept these terms.
 """
 
     static let userDefaultsKey = "SpoofTrap.firstLaunchDisclaimerSeen"
 }
 
 struct FirstLaunchDisclaimerView: View {
-    @Binding var isComplete: Bool
+    @Binding var isPresented: Bool
     @State private var appeared = false
 
     var body: some View {
@@ -35,28 +38,29 @@ struct FirstLaunchDisclaimerView: View {
                             .font(.system(size: 26, weight: .bold, design: .rounded))
                             .foregroundStyle(.white)
 
-                        Text("Quick notice")
+                        Text("Legal Notice")
                             .font(.system(size: 15, weight: .medium, design: .rounded))
                             .foregroundStyle(.cyan.opacity(0.75))
                     }
                     .opacity(appeared ? 1 : 0)
 
-                    Text(FirstLaunchDisclaimer.paragraph)
-                        .font(.system(size: 14, weight: .regular, design: .rounded))
-                        .foregroundStyle(.white.opacity(0.62))
-                        .multilineTextAlignment(.center)
-                        .lineSpacing(5)
-                        .fixedSize(horizontal: false, vertical: true)
-                        .frame(maxWidth: 520)
-                        .opacity(appeared ? 1 : 0)
+                    ScrollView {
+                        Text(FirstLaunchDisclaimer.paragraph)
+                            .font(.system(size: 14, weight: .regular, design: .rounded))
+                            .foregroundStyle(.white.opacity(0.62))
+                            .multilineTextAlignment(.center)
+                            .lineSpacing(5)
+                            .fixedSize(horizontal: false, vertical: true)
+                            .frame(maxWidth: 520)
+                    }
+                    .frame(maxHeight: 200)
+                    .opacity(appeared ? 1 : 0)
 
                     Button {
                         UserDefaults.standard.set(true, forKey: FirstLaunchDisclaimer.userDefaultsKey)
-                        withAnimation(.easeOut(duration: 0.35)) {
-                            isComplete = true
-                        }
+                        isPresented = false
                     } label: {
-                        Text("Continue")
+                        Text("I Understand and Agree")
                             .font(.system(size: 15, weight: .bold, design: .rounded))
                             .foregroundStyle(.white)
                             .frame(maxWidth: 280)

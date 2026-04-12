@@ -23,19 +23,21 @@ struct ContentView: View {
     @State private var showPlayerTracker = false
     @State private var newProfileName = ""
     @State private var onboardingComplete = UserDefaults.standard.bool(forKey: "SpoofTrap.onboardingComplete")
-    @State private var hasSeenFirstLaunchDisclaimer = UserDefaults.standard.bool(forKey: FirstLaunchDisclaimer.userDefaultsKey)
+    @State private var showDisclaimerSheet: Bool = !UserDefaults.standard.bool(forKey: FirstLaunchDisclaimer.userDefaultsKey)
 
     var body: some View {
         ZStack {
-            if !hasSeenFirstLaunchDisclaimer {
-                FirstLaunchDisclaimerView(isComplete: $hasSeenFirstLaunchDisclaimer)
-                    .transition(.opacity)
-            } else if !onboardingComplete {
+            if !onboardingComplete {
                 OnboardingView(viewModel: viewModel, isComplete: $onboardingComplete)
                     .transition(.opacity)
             } else {
                 mainContent
             }
+        }
+        .sheet(isPresented: $showDisclaimerSheet) {
+            FirstLaunchDisclaimerView(isPresented: $showDisclaimerSheet)
+                .interactiveDismissDisabled()
+                .frame(width: 600, height: 480)
         }
         .background(
             WindowAccessor { window in
@@ -46,7 +48,7 @@ struct ContentView: View {
             if UserDefaults.standard.bool(forKey: "SpoofTrap.onboardingComplete"),
                !UserDefaults.standard.bool(forKey: FirstLaunchDisclaimer.userDefaultsKey) {
                 UserDefaults.standard.set(true, forKey: FirstLaunchDisclaimer.userDefaultsKey)
-                hasSeenFirstLaunchDisclaimer = true
+                showDisclaimerSheet = false
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in

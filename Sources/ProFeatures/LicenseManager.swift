@@ -27,7 +27,8 @@ struct LicenseInfo: Codable {
     var expiresAt: Date?
     var activatedAt: Date
     var deviceId: String
-    
+    var lastSuccessfulValidationDate: Date?
+
     var isLifetime: Bool { plan == "lifetime" }
     var isExpired: Bool {
         guard let expires = expiresAt else { return false }
@@ -54,8 +55,18 @@ class LicenseManager: ObservableObject {
         return appDir.appendingPathComponent("license.json")
     }()
     
+    private static let offlineGracePeriodDays: TimeInterval = 7
+
     private var heartbeatTimer: Timer?
-    
+
+    var isWithinOfflineGracePeriod: Bool {
+        guard let lastValidation = currentLicense?.lastSuccessfulValidationDate else {
+            return false
+        }
+        let elapsed = Date().timeIntervalSince(lastValidation)
+        return elapsed < Self.offlineGracePeriodDays * 86400
+    }
+
     init() {
         loadStoredLicense()
     }
@@ -145,20 +156,29 @@ class LicenseManager: ObservableObject {
                     plan: result.plan ?? "pro",
                     expiresAt: parseDate(result.expiresAt),
                     activatedAt: Date(),
-                    deviceId: deviceId
+                    deviceId: deviceId,
+                    lastSuccessfulValidationDate: Date()
                 )
-                
+
                 currentLicense = license
                 isValidated = true
                 saveLicense(license)
                 startHeartbeat()
-                
+
                 return true
             } else {
+                // Explicit server rejection — lock immediately, no grace
                 validationError = mapError(result.error, message: result.message)
                 return false
             }
         } catch {
+            if isNetworkError(error) && isWithinOfflineGracePeriod {
+                let days = graceDaysRemaining()
+                print("[SpoofTrap] License validation failed due to network error. Pro features remain active for \(days) more day\(days == 1 ? "" : "s").")
+                isValidated = true
+                startHeartbeat()
+                return true
+            }
             validationError = "Network error: \(error.localizedDescription)"
             return false
         }
@@ -240,14 +260,26 @@ class LicenseManager: ObservableObject {
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: body)
             let (data, _) = try await URLSession.shared.data(for: request)
-            
+
             if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let valid = json["valid"] as? Bool, !valid {
-                clearLicense()
-                validationError = "License no longer valid"
+               let valid = json["valid"] as? Bool {
+                if valid {
+                    updateLastSuccessfulValidation()
+                } else {
+                    // Explicit server rejection — lock immediately
+                    clearLicense()
+                    validationError = "License no longer valid"
+                }
             }
         } catch {
-            // Heartbeat failures are silent
+            if isNetworkError(error) && isWithinOfflineGracePeriod {
+                let days = graceDaysRemaining()
+                print("[SpoofTrap] License validation failed due to network error. Pro features remain active for \(days) more day\(days == 1 ? "" : "s").")
+            } else if !isWithinOfflineGracePeriod {
+                clearLicense()
+                validationError = "License validation expired. Please reconnect to the internet."
+            }
+            // Other non-network errors remain silent (existing behavior)
         }
     }
     
@@ -276,18 +308,18 @@ class LicenseManager: ObservableObject {
     
     private func validateOnLaunch(license: LicenseInfo) async {
         isValidating = true
-        
-        // Must validate with server - no grace period
+
         let success = await activate(licenseKey: license.licenseKey)
-        
-        if !success {
-            // Validation failed - clear license immediately
+
+        if !success && !isValidated {
+            // activate() may have already granted grace period access
+            // (setting isValidated = true). Only clear if it didn't.
             clearLicense()
             if validationError == nil {
                 validationError = "License validation failed. Please check your connection."
             }
         }
-        
+
         isValidating = false
     }
     
@@ -327,5 +359,40 @@ class LicenseManager: ObservableObject {
         case "max_activations": return "Maximum devices reached. Deactivate another device first."
         default: return message ?? "Validation failed"
         }
+    }
+
+    private func isNetworkError(_ error: Error) -> Bool {
+        let nsError = error as NSError
+        guard nsError.domain == NSURLErrorDomain else { return false }
+        let networkCodes: Set<Int> = [
+            NSURLErrorNotConnectedToInternet,
+            NSURLErrorTimedOut,
+            NSURLErrorCannotConnectToHost,
+            NSURLErrorNetworkConnectionLost,
+            NSURLErrorDNSLookupFailed,
+            NSURLErrorCannotFindHost,
+            NSURLErrorSecureConnectionFailed,
+            NSURLErrorServerCertificateUntrusted,
+            NSURLErrorServerCertificateHasBadDate,
+            NSURLErrorServerCertificateNotYetValid,
+            NSURLErrorServerCertificateHasUnknownRoot,
+            NSURLErrorInternationalRoamingOff,
+            NSURLErrorDataNotAllowed,
+        ]
+        return networkCodes.contains(nsError.code)
+    }
+
+    private func graceDaysRemaining() -> Int {
+        guard let lastValidation = currentLicense?.lastSuccessfulValidationDate else { return 0 }
+        let elapsed = Date().timeIntervalSince(lastValidation)
+        let remaining = Self.offlineGracePeriodDays - (elapsed / 86400)
+        return max(0, Int(remaining.rounded(.up)))
+    }
+
+    private func updateLastSuccessfulValidation() {
+        guard var license = currentLicense else { return }
+        license.lastSuccessfulValidationDate = Date()
+        currentLicense = license
+        saveLicense(license)
     }
 }
