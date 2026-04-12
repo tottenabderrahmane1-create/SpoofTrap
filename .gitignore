@@ -14,3 +14,6 @@ dist/SpoofTrap/
 
 # Claude Code local settings
 .claude/
+
+# Local-only session instructions (not published)
+CLAUDE.md
