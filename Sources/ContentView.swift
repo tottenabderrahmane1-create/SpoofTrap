@@ -23,10 +23,14 @@ struct ContentView: View {
     @State private var showPlayerTracker = false
     @State private var newProfileName = ""
     @State private var onboardingComplete = UserDefaults.standard.bool(forKey: "SpoofTrap.onboardingComplete")
+    @State private var hasSeenFirstLaunchDisclaimer = UserDefaults.standard.bool(forKey: FirstLaunchDisclaimer.userDefaultsKey)
 
     var body: some View {
         ZStack {
-            if !onboardingComplete {
+            if !hasSeenFirstLaunchDisclaimer {
+                FirstLaunchDisclaimerView(isComplete: $hasSeenFirstLaunchDisclaimer)
+                    .transition(.opacity)
+            } else if !onboardingComplete {
                 OnboardingView(viewModel: viewModel, isComplete: $onboardingComplete)
                     .transition(.opacity)
             } else {
@@ -38,6 +42,13 @@ struct ContentView: View {
                 configureWindow(window)
             }
         )
+        .onAppear {
+            if UserDefaults.standard.bool(forKey: "SpoofTrap.onboardingComplete"),
+               !UserDefaults.standard.bool(forKey: FirstLaunchDisclaimer.userDefaultsKey) {
+                UserDefaults.standard.set(true, forKey: FirstLaunchDisclaimer.userDefaultsKey)
+                hasSeenFirstLaunchDisclaimer = true
+            }
+        }
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
             viewModel.forceCleanupForTermination()
         }

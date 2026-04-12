@@ -754,6 +754,13 @@ Text Muted:     rgba(255,255,255,0.4)
 **Status Pill States:**
 - Offline, Starting, Live, Stopping
 
+**First-launch disclaimer (responsibility, not scary):**  
+Show once before onboarding on a dedicated screen (same flow as macOS). Persist with a flag such as `firstLaunchDisclaimerSeen` in local settings. Title line: **Before you start** / **Quick notice**. Body (single paragraph, use verbatim for parity):
+
+> SpoofTrap helps you run Roblox when your network makes that harder. By continuing, you agree you are responsible for following the laws and rules that apply to you—including your school or employer's policies, your internet provider's terms, and Roblox's Terms of Use—and that you will only use the app where you are allowed to. This is not legal advice; if you are unsure, check with a parent, guardian, or other appropriate person before you continue.
+
+Primary button: **Continue**. Users who already completed onboarding before this feature shipped should be grandfathered (set the flag automatically so they are not blocked).
+
 ---
 
 ## Project Structure
