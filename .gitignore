@@ -11,3 +11,6 @@ dist/build/
 dist/SpoofTrap/
 
 .secrets/
+
+# Claude Code local settings
+.claude/
