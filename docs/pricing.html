@@ -6,14 +6,14 @@
     <title>SpoofTrap | Free vs Pro</title>
     <meta
       name="description"
-      content="Compare SpoofTrap Free and Pro features side by side. See what's included and what Pro unlocks."
+      content="SpoofTrap is free to download. Pro unlocks with a license key from Discord — no subscription, no checkout, no payment processor."
     />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="SpoofTrap" />
     <meta property="og:title" content="SpoofTrap | Free vs Pro" />
     <meta
       property="og:description"
-      content="Compare SpoofTrap Free and Pro features side by side."
+      content="Free download. Pro keys from Discord. No subscription or checkout."
     />
     <meta property="og:url" content="https://spooftrap.port0.org/pricing.html" />
     <meta
@@ -27,7 +27,7 @@
     <meta name="twitter:title" content="SpoofTrap | Free vs Pro" />
     <meta
       name="twitter:description"
-      content="Compare SpoofTrap Free and Pro features side by side."
+      content="Free download. Pro keys from Discord. No subscription or checkout."
     />
     <meta
       name="twitter:image"
@@ -72,12 +72,14 @@
         display: grid;
         grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 22px;
+        align-items: stretch;
         animation: fadeRise 920ms ease-out both;
       }
 
       .pricing-card {
         display: flex;
         flex-direction: column;
+        min-height: 100%;
         padding: 30px;
         border-radius: var(--radius-xl);
         border: 1px solid rgba(255, 255, 255, 0.1);
@@ -85,15 +87,43 @@
       }
 
       .pricing-card-pro {
-        border-color: rgba(249, 217, 122, 0.3);
+        position: relative;
+        border-color: rgba(125, 232, 255, 0.42);
+        box-shadow:
+          0 0 0 1px rgba(125, 232, 255, 0.1),
+          0 20px 56px rgba(67, 198, 255, 0.12);
         background:
-          radial-gradient(circle at top right, rgba(249, 217, 122, 0.14), transparent 34%),
+          radial-gradient(circle at top right, rgba(125, 232, 255, 0.14), transparent 38%),
           linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0.05));
+      }
+
+      .pricing-card-subtitle {
+        display: block;
+        margin-top: 12px;
+        color: var(--muted);
+        font-size: 0.95rem;
+        line-height: 1.45;
+      }
+
+      .pricing-recommended-pill {
+        display: inline-flex;
+        align-items: center;
+        min-height: 26px;
+        padding: 0 10px;
+        border-radius: 999px;
+        font-size: 0.68rem;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--accent);
+        border: 1px solid rgba(125, 232, 255, 0.35);
+        background: rgba(125, 232, 255, 0.1);
       }
 
       .pricing-tier {
         display: inline-flex;
         align-items: center;
+        flex-wrap: wrap;
         gap: 8px;
       }
 
@@ -115,8 +145,8 @@
       }
 
       .pricing-tier-badge-pro {
-        background: linear-gradient(135deg, rgba(249, 217, 122, 0.3), rgba(255, 180, 50, 0.2));
-        color: var(--accent-warm);
+        background: rgba(125, 232, 255, 0.16);
+        color: var(--accent);
       }
 
       .pricing-price {
@@ -128,11 +158,40 @@
         line-height: 1;
       }
 
+      .pricing-price-pro-label {
+        font-size: clamp(1.35rem, 2.6vw, 1.75rem);
+        letter-spacing: -0.04em;
+        line-height: 1.2;
+      }
+
       .pricing-price-sub {
         display: block;
         margin-top: 8px;
         color: var(--muted);
         font-size: 0.95rem;
+      }
+
+      .pricing-card-cta-hint {
+        margin-top: 12px;
+        font-size: 0.82rem;
+        line-height: 1.5;
+        color: var(--subtle);
+        text-align: center;
+      }
+
+      .pricing-cta-pro .button {
+        min-height: 58px;
+        font-size: 1.02rem;
+      }
+
+      .pricing-footnote {
+        max-width: 52rem;
+        margin: 28px auto 0;
+        padding: 0 12px;
+        text-align: center;
+        color: var(--muted);
+        font-size: 0.88rem;
+        line-height: 1.6;
       }
 
       .pricing-divider {
@@ -183,8 +242,8 @@
       }
 
       .pricing-check-pro {
-        background: linear-gradient(135deg, rgba(249, 217, 122, 0.22), rgba(255, 180, 50, 0.14));
-        color: var(--accent-warm);
+        background: rgba(125, 232, 255, 0.16);
+        color: var(--accent);
       }
 
       .pricing-check-no {
@@ -198,94 +257,6 @@
 
       .pricing-card-cta .button {
         width: 100%;
-      }
-
-      .pricing-table-section {
-        padding: 30px;
-        border-radius: var(--radius-xl);
-        animation: fadeRise 1000ms ease-out both;
-      }
-
-      .pricing-table {
-        width: 100%;
-        margin-top: 24px;
-        border-collapse: separate;
-        border-spacing: 0;
-      }
-
-      .pricing-table thead th {
-        padding: 14px 18px;
-        text-align: left;
-        font-size: 0.78rem;
-        font-weight: 800;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        color: var(--subtle);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      }
-
-      .pricing-table thead th:nth-child(2),
-      .pricing-table thead th:nth-child(3) {
-        text-align: center;
-        width: 120px;
-      }
-
-      .pricing-table-group td {
-        padding: 14px 18px 8px;
-        font-size: 0.82rem;
-        font-weight: 800;
-        letter-spacing: 0.1em;
-        text-transform: uppercase;
-        color: var(--accent);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-      }
-
-      .pricing-table tbody td {
-        padding: 12px 18px;
-        font-size: 0.95rem;
-        color: var(--muted);
-        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
-      }
-
-      .pricing-table tbody td:nth-child(2),
-      .pricing-table tbody td:nth-child(3) {
-        text-align: center;
-      }
-
-      .pricing-table tbody tr:last-child td {
-        border-bottom: none;
-      }
-
-      .pricing-table .t-check {
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-        width: 24px;
-        height: 24px;
-        border-radius: 999px;
-        font-size: 0.7rem;
-        font-weight: 800;
-      }
-
-      .pricing-table .t-yes {
-        background: rgba(125, 232, 255, 0.14);
-        color: var(--accent);
-      }
-
-      .pricing-table .t-pro {
-        background: linear-gradient(135deg, rgba(249, 217, 122, 0.22), rgba(255, 180, 50, 0.14));
-        color: var(--accent-warm);
-      }
-
-      .pricing-table .t-no {
-        background: rgba(255, 255, 255, 0.05);
-        color: rgba(255, 255, 255, 0.2);
-      }
-
-      .pricing-table .t-limit {
-        font-size: 0.82rem;
-        color: var(--subtle);
-        font-weight: 600;
       }
 
       .pricing-faq {
@@ -330,25 +301,12 @@
 
       @media (max-width: 760px) {
         .pricing-hero,
-        .pricing-table-section,
         .pricing-faq {
           padding: 22px;
         }
 
         .pricing-hero h1 {
           font-size: clamp(2.4rem, 13vw, 4rem);
-        }
-
-        .pricing-table thead th:nth-child(2),
-        .pricing-table thead th:nth-child(3) {
-          width: 80px;
-        }
-
-        .pricing-table thead th,
-        .pricing-table tbody td,
-        .pricing-table-group td {
-          padding: 10px 12px;
-          font-size: 0.85rem;
         }
       }
     </style>
@@ -392,17 +350,17 @@
 
           <section class="pricing-hero glass-panel">
             <span class="section-tag">Pricing</span>
-            <h1>Free does a lot. Pro does everything.</h1>
+            <h1>Free to download. Pro from Discord.</h1>
             <p class="hero-text">
-              SpoofTrap works out of the box for free — bypass, FastFlags, presets,
-              basic mods, and more. Pro unlocks the power-user features for people
-              who want full control.
+              SpoofTrap is free to download. There is no subscription, no checkout, and no monthly or yearly plan.
+              Pro is unlocked with a license key, and keys are issued by hand in the Discord server — no payment processor,
+              no recurring charges, and no credit card required.
             </p>
             <div class="hero-meta" aria-label="Plan highlights">
-              <span>No ads</span>
-              <span>No trials</span>
-              <span>One-time key</span>
-              <span>Both platforms</span>
+              <span>Free download</span>
+              <span>No subscription</span>
+              <span>Keys in Discord</span>
+              <span>2 devices per key</span>
             </div>
           </section>
 
@@ -412,107 +370,85 @@
               <div class="pricing-tier">
                 <span class="pricing-tier-badge pricing-tier-badge-free">Free</span>
               </div>
-              <span class="pricing-price">$0</span>
-              <span class="pricing-price-sub">Free forever — no account needed</span>
+              <span class="pricing-card-subtitle">Download and play. No account required.</span>
+              <span class="pricing-price">Free</span>
               <div class="pricing-divider"></div>
               <ul class="pricing-features">
                 <li>
                   <span class="pricing-check pricing-check-yes">✓</span>
-                  <span><strong>Full bypass</strong> — App &amp; System proxy modes</span>
+                  <span><strong>Core DPI bypass</strong> — Stable &amp; Balanced presets</span>
                 </li>
                 <li>
                   <span class="pricing-check pricing-check-yes">✓</span>
-                  <span><strong>Stable &amp; Balanced</strong> presets</span>
+                  <span><strong>FastFlags editor</strong> (curated allowlisted flags)</span>
                 </li>
                 <li>
                   <span class="pricing-check pricing-check-yes">✓</span>
-                  <span><strong>FastFlags toggle</strong> &amp; edit existing flags</span>
+                  <span><strong>Death Sound + Custom Cursor</strong> mods</span>
                 </li>
                 <li>
                   <span class="pricing-check pricing-check-yes">✓</span>
-                  <span><strong>FPS Unlocker</strong> up to 120 fps</span>
+                  <span><strong>FPS unlocker</strong> (60 / 120 fps)</span>
                 </li>
                 <li>
                   <span class="pricing-check pricing-check-yes">✓</span>
-                  <span><strong>Death sound &amp; cursor</strong> mods (bundled defaults)</span>
+                  <span><strong>Server hopping + region display</strong></span>
                 </li>
                 <li>
                   <span class="pricing-check pricing-check-yes">✓</span>
-                  <span><strong>Session log</strong>, copy &amp; export</span>
+                  <span><strong>Quick Launch favorites</strong> (up to 3)</span>
                 </li>
                 <li>
                   <span class="pricing-check pricing-check-yes">✓</span>
-                  <span><strong>Game search</strong> &amp; quick launch</span>
+                  <span><strong>Game history</strong> (last 5 sessions)</span>
                 </li>
                 <li>
                   <span class="pricing-check pricing-check-yes">✓</span>
-                  <span><strong>Favorites</strong> (up to 5 games)</span>
+                  <span><strong>Tray mode + auto-update checker</strong></span>
                 </li>
                 <li>
                   <span class="pricing-check pricing-check-yes">✓</span>
-                  <span><strong>Server region</strong> &amp; ping display</span>
-                </li>
-                <li>
-                  <span class="pricing-check pricing-check-yes">✓</span>
-                  <span><strong>Cache cleaner</strong> &amp; Roblox log viewer</span>
-                </li>
-                <li>
-                  <span class="pricing-check pricing-check-yes">✓</span>
-                  <span><strong>Discord Rich Presence</strong> (basic)</span>
-                </li>
-                <li>
-                  <span class="pricing-check pricing-check-yes">✓</span>
-                  <span><strong>Auto-updater</strong> &amp; onboarding</span>
-                </li>
-                <li>
-                  <span class="pricing-check pricing-check-yes">✓</span>
-                  <span><strong>Global hotkeys</strong> &amp; notifications</span>
+                  <span><strong>Settings backup &amp; restore</strong></span>
                 </li>
               </ul>
               <div class="pricing-card-cta">
-                <a class="button button-secondary" href="./index.html#download">Download Free</a>
+                <a class="button button-secondary" href="https://spooftrap.port0.org/#download">Download</a>
               </div>
             </div>
 
             <div class="pricing-card pricing-card-pro">
               <div class="pricing-tier">
                 <span class="pricing-tier-badge pricing-tier-badge-pro">Pro</span>
+                <span class="pricing-recommended-pill">Recommended</span>
               </div>
-              <span class="pricing-price">License Key</span>
-              <span class="pricing-price-sub">One key — macOS &amp; Windows. Join Discord for details.</span>
+              <span class="pricing-card-subtitle">Unlocked with a key from Discord.</span>
+              <span class="pricing-price pricing-price-pro-label">Ask in Discord</span>
+              <span class="pricing-price-sub">Free key in Discord — no dollar amount, no checkout</span>
               <div class="pricing-divider"></div>
               <ul class="pricing-features">
                 <li>
                   <span class="pricing-check pricing-check-pro">✓</span>
-                  <span><strong>Everything in Free</strong>, plus:</span>
+                  <span><strong>Everything in Free, plus:</strong></span>
                 </li>
                 <li>
                   <span class="pricing-check pricing-check-pro">✓</span>
-                  <span><strong>Fast &amp; Custom</strong> proxy presets</span>
+                  <span><strong>Fast &amp; Custom</strong> presets + advanced settings</span>
                 </li>
                 <li>
                   <span class="pricing-check pricing-check-pro">✓</span>
-                  <span><strong>Add custom FastFlags</strong> — full editor</span>
+                  <span><strong>Custom FastFlag entries</strong> (any FFlag)</span>
                 </li>
                 <li>
                   <span class="pricing-check pricing-check-pro">✓</span>
-                  <span><strong>FPS Unlocker</strong> — 144, 240, or unlimited</span>
+                  <span><strong>All mod categories + custom file imports</strong></span>
                 </li>
                 <li>
                   <span class="pricing-check pricing-check-pro">✓</span>
-                  <span><strong>All mod categories</strong> — app icon, fonts, avatar bg, loading screen</span>
+                  <span><strong>Custom FPS targets</strong> (144 / 240 / Max)</span>
                 </li>
                 <li>
                   <span class="pricing-check pricing-check-pro">✓</span>
-                  <span><strong>Import custom mod files</strong></span>
-                </li>
-                <li>
-                  <span class="pricing-check pricing-check-pro">✓</span>
-                  <span><strong>Advanced settings</strong> — chunk size, disorder, DNS-over-HTTPS</span>
-                </li>
-                <li>
-                  <span class="pricing-check pricing-check-pro">✓</span>
-                  <span><strong>Multi-instance</strong> — run multiple Roblox windows</span>
+                  <span><strong>Multi-instance</strong> Roblox launching</span>
                 </li>
                 <li>
                   <span class="pricing-check pricing-check-pro">✓</span>
@@ -520,123 +456,37 @@
                 </li>
                 <li>
                   <span class="pricing-check pricing-check-pro">✓</span>
-                  <span><strong>Ping optimizer</strong> — DNS pre-cache, process boost, low-ping preset</span>
+                  <span><strong>Roblox version pinning</strong></span>
                 </li>
                 <li>
                   <span class="pricing-check pricing-check-pro">✓</span>
-                  <span><strong>Performance overlay</strong> — live FPS, ping, memory widget</span>
+                  <span><strong>Floating performance overlay</strong></span>
                 </li>
                 <li>
                   <span class="pricing-check pricing-check-pro">✓</span>
-                  <span><strong>Version pinning</strong> — prevent Roblox auto-updates</span>
-                </li>
-                <li>
-                  <span class="pricing-check pricing-check-pro">✓</span>
-                  <span><strong>Unlimited favorites</strong> &amp; full game history</span>
-                </li>
-                <li>
-                  <span class="pricing-check pricing-check-pro">✓</span>
-                  <span><strong>Detailed stats</strong>, custom themes, update channel switching</span>
-                </li>
-                <li>
-                  <span class="pricing-check pricing-check-pro">✓</span>
-                  <span><strong>Discord Rich Presence</strong> — detailed game info &amp; join button</span>
+                  <span><strong>Detailed Discord Rich Presence + accent themes</strong></span>
                 </li>
               </ul>
-              <div class="pricing-card-cta">
+              <div class="pricing-card-cta pricing-cta-pro">
                 <a
                   class="button button-primary"
-                  href="https://discord.gg/32UmsRfVha"
+                  href="https://discord.gg/62A4PejJXR"
                   target="_blank"
                   rel="noreferrer"
                 >
-                  Get Pro via Discord
+                  Join Discord
                 </a>
+                <p class="pricing-card-cta-hint">
+                  Open a ticket or DM Grant. Usually replied within 24h.
+                </p>
               </div>
             </div>
 
           </div>
 
-          <section class="pricing-table-section glass-panel">
-            <span class="section-tag">Full comparison</span>
-            <h2 style="margin: 16px 0 0; font-size: clamp(2rem, 4vw, 3rem); line-height: 0.98; letter-spacing: -0.06em;">
-              Feature-by-feature breakdown.
-            </h2>
-
-            <table class="pricing-table">
-              <thead>
-                <tr>
-                  <th>Feature</th>
-                  <th>Free</th>
-                  <th>Pro</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr class="pricing-table-group"><td colspan="3">Core</td></tr>
-                <tr><td>Network bypass (spoofdpi)</td><td><span class="t-check t-yes">✓</span></td><td><span class="t-check t-yes">✓</span></td></tr>
-                <tr><td>App proxy mode</td><td><span class="t-check t-yes">✓</span></td><td><span class="t-check t-yes">✓</span></td></tr>
-                <tr><td>System proxy mode</td><td><span class="t-check t-yes">✓</span></td><td><span class="t-check t-yes">✓</span></td></tr>
-                <tr><td>Stable &amp; Balanced presets</td><td><span class="t-check t-yes">✓</span></td><td><span class="t-check t-yes">✓</span></td></tr>
-                <tr><td>Fast &amp; Custom presets</td><td><span class="t-check t-no">—</span></td><td><span class="t-check t-pro">✓</span></td></tr>
-                <tr><td>Auto-updater</td><td><span class="t-check t-yes">✓</span></td><td><span class="t-check t-yes">✓</span></td></tr>
-                <tr><td>First-run onboarding</td><td><span class="t-check t-yes">✓</span></td><td><span class="t-check t-yes">✓</span></td></tr>
-
-                <tr class="pricing-table-group"><td colspan="3">FastFlags</td></tr>
-                <tr><td>Toggle FastFlags on/off</td><td><span class="t-check t-yes">✓</span></td><td><span class="t-check t-yes">✓</span></td></tr>
-                <tr><td>Edit existing flag values</td><td><span class="t-check t-yes">✓</span></td><td><span class="t-check t-yes">✓</span></td></tr>
-                <tr><td>Add custom flags</td><td><span class="t-check t-no">—</span></td><td><span class="t-check t-pro">✓</span></td></tr>
-                <tr><td>FastFlag profiles (save/load)</td><td><span class="t-check t-yes">✓</span></td><td><span class="t-check t-yes">✓</span></td></tr>
-                <tr><td>Low-ping network preset</td><td><span class="t-check t-no">—</span></td><td><span class="t-check t-pro">✓</span></td></tr>
-
-                <tr class="pricing-table-group"><td colspan="3">FPS</td></tr>
-                <tr><td>FPS Unlocker (up to 120)</td><td><span class="t-check t-yes">✓</span></td><td><span class="t-check t-yes">✓</span></td></tr>
-                <tr><td>FPS 144 / 240 / Unlimited</td><td><span class="t-check t-no">—</span></td><td><span class="t-check t-pro">✓</span></td></tr>
-                <tr><td>FPS display (live)</td><td><span class="t-check t-yes">✓</span></td><td><span class="t-check t-yes">✓</span></td></tr>
-
-                <tr class="pricing-table-group"><td colspan="3">Mods</td></tr>
-                <tr><td>Death sound mod</td><td><span class="t-check t-yes">✓</span></td><td><span class="t-check t-yes">✓</span></td></tr>
-                <tr><td>Cursor mod</td><td><span class="t-check t-yes">✓</span></td><td><span class="t-check t-yes">✓</span></td></tr>
-                <tr><td>App icon mod</td><td><span class="t-check t-no">—</span></td><td><span class="t-check t-pro">✓</span></td></tr>
-                <tr><td>Fonts mod</td><td><span class="t-check t-no">—</span></td><td><span class="t-check t-pro">✓</span></td></tr>
-                <tr><td>Avatar background mod</td><td><span class="t-check t-no">—</span></td><td><span class="t-check t-pro">✓</span></td></tr>
-                <tr><td>Loading screen mod</td><td><span class="t-check t-no">—</span></td><td><span class="t-check t-pro">✓</span></td></tr>
-                <tr><td>Import custom mod files</td><td><span class="t-check t-no">—</span></td><td><span class="t-check t-pro">✓</span></td></tr>
-
-                <tr class="pricing-table-group"><td colspan="3">Launcher</td></tr>
-                <tr><td>Game search &amp; quick play</td><td><span class="t-check t-yes">✓</span></td><td><span class="t-check t-yes">✓</span></td></tr>
-                <tr><td>Favorites</td><td><span class="t-limit">Up to 5</span></td><td><span class="t-check t-pro">∞</span></td></tr>
-                <tr><td>Game thumbnails</td><td><span class="t-check t-yes">✓</span></td><td><span class="t-check t-yes">✓</span></td></tr>
-                <tr><td>Game history</td><td><span class="t-limit">Last 5</span></td><td><span class="t-check t-pro">∞</span></td></tr>
-                <tr><td>Multi-instance</td><td><span class="t-check t-no">—</span></td><td><span class="t-check t-pro">✓</span></td></tr>
-                <tr><td>Auto-rejoin on disconnect</td><td><span class="t-check t-no">—</span></td><td><span class="t-check t-pro">✓</span></td></tr>
-
-                <tr class="pricing-table-group"><td colspan="3">Network &amp; Performance</td></tr>
-                <tr><td>Server region &amp; ping display</td><td><span class="t-check t-yes">✓</span></td><td><span class="t-check t-yes">✓</span></td></tr>
-                <tr><td>DNS pre-resolve &amp; cache</td><td><span class="t-check t-no">—</span></td><td><span class="t-check t-pro">✓</span></td></tr>
-                <tr><td>Process priority boost</td><td><span class="t-check t-no">—</span></td><td><span class="t-check t-pro">✓</span></td></tr>
-                <tr><td>Performance overlay widget</td><td><span class="t-check t-no">—</span></td><td><span class="t-check t-pro">✓</span></td></tr>
-
-                <tr class="pricing-table-group"><td colspan="3">Advanced</td></tr>
-                <tr><td>Advanced settings (chunk size, disorder, DoH)</td><td><span class="t-check t-no">—</span></td><td><span class="t-check t-pro">✓</span></td></tr>
-                <tr><td>Roblox version pinning</td><td><span class="t-check t-no">—</span></td><td><span class="t-check t-pro">✓</span></td></tr>
-                <tr><td>Update channel switching</td><td><span class="t-check t-no">—</span></td><td><span class="t-check t-pro">✓</span></td></tr>
-                <tr><td>Custom themes / accent color</td><td><span class="t-check t-no">—</span></td><td><span class="t-check t-pro">✓</span></td></tr>
-                <tr><td>Settings backup &amp; restore</td><td><span class="t-check t-yes">✓</span></td><td><span class="t-check t-yes">✓</span></td></tr>
-                <tr><td>Menu bar / compact mode</td><td><span class="t-check t-yes">✓</span></td><td><span class="t-check t-yes">✓</span></td></tr>
-
-                <tr class="pricing-table-group"><td colspan="3">Integrations</td></tr>
-                <tr><td>Discord Rich Presence (basic)</td><td><span class="t-check t-yes">✓</span></td><td><span class="t-check t-yes">✓</span></td></tr>
-                <tr><td>Discord Rich Presence (detailed + join)</td><td><span class="t-check t-no">—</span></td><td><span class="t-check t-pro">✓</span></td></tr>
-                <tr><td>Global hotkeys</td><td><span class="t-check t-yes">✓</span></td><td><span class="t-check t-yes">✓</span></td></tr>
-                <tr><td>macOS notifications</td><td><span class="t-check t-yes">✓</span></td><td><span class="t-check t-yes">✓</span></td></tr>
-                <tr><td>Log export (.txt)</td><td><span class="t-check t-yes">✓</span></td><td><span class="t-check t-yes">✓</span></td></tr>
-                <tr><td>Cache cleaner</td><td><span class="t-check t-yes">✓</span></td><td><span class="t-check t-yes">✓</span></td></tr>
-                <tr><td>Player join/leave tracker</td><td><span class="t-check t-yes">✓</span></td><td><span class="t-check t-yes">✓</span></td></tr>
-                <tr><td>Roblox raw log viewer</td><td><span class="t-check t-yes">✓</span></td><td><span class="t-check t-yes">✓</span></td></tr>
-                <tr><td>Detailed session stats</td><td><span class="t-check t-no">—</span></td><td><span class="t-check t-pro">✓</span></td></tr>
-              </tbody>
-            </table>
-          </section>
+          <p class="pricing-footnote">
+            SpoofTrap doesn&apos;t use a payment processor. Pro keys are handed out in Discord. No subscription, no recurring charges, no credit card needed. Each key activates on up to 2 devices.
+          </p>
 
           <section class="pricing-faq glass-panel">
             <span class="section-tag">FAQ</span>
@@ -646,28 +496,26 @@
 
             <div class="faq-grid">
               <div class="faq-item">
-                <strong>Do I need Pro to use the bypass?</strong>
-                <p>No. The core bypass works on Free with both App and System proxy modes. Pro only adds power-user features on top.</p>
-              </div>
-              <div class="faq-item">
-                <strong>Does one key work on both macOS and Windows?</strong>
-                <p>Yes. A single Pro license key activates on both platforms. You can deactivate and move it between machines.</p>
-              </div>
-              <div class="faq-item">
-                <strong>Is there a free trial?</strong>
-                <p>No trial, but Free is fully functional — not a crippled demo. Most users never need Pro.</p>
-              </div>
-              <div class="faq-item">
                 <strong>How do I get a Pro key?</strong>
-                <p>Join the Discord server and check the pinned messages or ask in the support channel for license details.</p>
+                <p>
+                  Join the Discord, open a ticket in <strong>#how-to-get-pro</strong> or DM Grant directly. Tell us your platform (macOS or Windows). Most keys are issued within 24 hours.
+                </p>
               </div>
               <div class="faq-item">
-                <strong>Can I downgrade from Pro?</strong>
-                <p>Yes. Deactivate your license in Settings and the app reverts to Free. Pro features lock but nothing is deleted.</p>
+                <strong>Does it cost money?</strong>
+                <p>
+                  No payment processor, no subscription. Keys are issued by hand. If you want to support the project, the best thing you can do is post about SpoofTrap on TikTok, YouTube, or Reddit and share the link in <strong>#community-content</strong> — that earns you a Pro key on the spot.
+                </p>
               </div>
               <div class="faq-item">
-                <strong>Will Free features stay free?</strong>
-                <p>Yes. Core features (bypass, basic presets, FastFlags toggle, log, mods) will always be free. We don't paywall things retroactively.</p>
+                <strong>How many devices does one key activate?</strong>
+                <p>
+                  Two. You can use one Mac and one Windows machine, or two of either. If you need to move to a new computer, ask in Discord and we&apos;ll deactivate the old one.
+                </p>
+              </div>
+              <div class="faq-item">
+                <strong>What if my key stops working?</strong>
+                <p>Open a ticket in Discord and we&apos;ll fix it.</p>
               </div>
             </div>
           </section>
