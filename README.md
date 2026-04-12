@@ -46,9 +46,17 @@ DMG is the easiest install. PKG and ZIP stay available if you need a different f
 - Windows page: [spooftrap.port0.org/windows.html](https://spooftrap.port0.org/windows.html)
 - Socials: [spooftrap.port0.org/socials.html](https://spooftrap.port0.org/socials.html)
 
+## macOS packaging (developers)
+
+SpoofTrap **bundles** the `spoofdpi` binary so users do not download it separately. Source of truth:
+
+- Put or replace the macOS `spoofdpi` at **`Sources/Resources/bin/spoofdpi`** (tracked in git).
+- Run **`scripts/package_macos_app.sh`** — it builds the app, copies the executable into `dist/SpoofTrap.app`, copies **`Resources/bin/spoofdpi`** into the bundle, syncs the SwiftPM resource bundle, then **`codesign --force --deep --sign -`** and **`xattr -cr`**.
+
+After that, recreate **ZIP / DMG / PKG** from `dist/SpoofTrap.app` as you usually do for releases, and update `docs/dist/latest.json` hashes.
+
 ## Notes
 
-- This public repository is release-focused and does not include the private application source.
 - macOS builds are available through the release files in `dist/` and on the website.
 - Windows is available as a public beta. Expect unfinished behavior, bugs, and changes without notice.
 

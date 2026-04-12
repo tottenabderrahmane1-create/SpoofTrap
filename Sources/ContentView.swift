@@ -371,6 +371,13 @@ struct ContentView: View {
                         .foregroundStyle(.white.opacity(0.4))
                         .lineLimit(1)
                         .truncationMode(.middle)
+
+                    if !viewModel.binaryAvailable {
+                        Text("The app ships with spoofdpi inside the bundle (Resources/bin). If you see red, reinstall or use Choose — you can also drop a newer spoofdpi into that folder.")
+                            .font(.system(size: 10, weight: .medium, design: .rounded))
+                            .foregroundStyle(.orange.opacity(0.75))
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
 
                 Divider().background(Color.white.opacity(0.1))

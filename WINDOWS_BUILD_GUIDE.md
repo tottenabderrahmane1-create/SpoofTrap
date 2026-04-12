@@ -27,6 +27,7 @@ SpoofTrap runs a local proxy (spoofdpi) that helps bypass Roblox network restric
 - Launch Roblox with proxy environment variables
 - Configuration presets: Stable, Balanced, Fast, Custom
 - Bundle spoofdpi.exe with the app
+- **macOS parity:** the macOS app bundles `spoofdpi` at `Contents/Resources/bin/spoofdpi`. Run `scripts/package_macos_app.sh` after placing the macOS binary at `Sources/Resources/bin/spoofdpi` so releases do not rely on a separate download.
 
 ### 2. License Key System (CRITICAL)
 

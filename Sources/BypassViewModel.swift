@@ -810,7 +810,9 @@ final class BypassViewModel: ObservableObject {
         }
 
         guard binaryAvailable, let resolvedBinaryPath else {
-            appendLog("spoofdpi is missing. Set a valid binary path or place it in ~/Documents.")
+            appendLog(
+                "spoofdpi not found. A normal install includes it at SpoofTrap.app/Contents/Resources/bin/spoofdpi — reinstall from the site if that folder is empty. You can also use Choose to pick a binary, or place spoofdpi at ~/Documents/spoofdpi."
+            )
             state = .stopped
             return
         }
