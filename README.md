@@ -57,6 +57,10 @@ SpoofTrap **bundles** the `spoofdpi` binary so users do not download it separate
 
 Then run **`scripts/build_installers.sh`** — it builds **ZIP / DMG / PKG** in `dist/`, copies them into **`docs/dist/`** (what GitHub Pages serves), and prints **SHA-256** lines for `docs/dist/latest.json`.
 
+## Pushing to This Repository
+
+Do not push the full compiled source code, build outputs, or distribution binaries to this repository. The `.gitignore` is configured to exclude `.build/`, `output/`, and `dist/` build intermediates. Before pushing, verify that your commit only contains source files, assets, scripts, and configuration — not compiled executables, `.app` bundles, or packaged DMG/PKG/ZIP release artifacts. The `dist/` and `docs/dist/` directories contain release distributables that are tracked intentionally; do not add new build artifacts without updating checksums in `docs/dist/latest.json`.
+
 ## Notes
 
 - macOS builds are available through the release files in `dist/` and on the website.
