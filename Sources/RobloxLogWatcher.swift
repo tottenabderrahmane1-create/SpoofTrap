@@ -149,6 +149,12 @@ final class RobloxLogWatcher: ObservableObject {
         }
     }
 
+    private nonisolated static func isValidIP(_ ip: String) -> Bool {
+        // 🛡️ Sentinel: Prevent SSRF and argument injection by validating IP format
+        let pattern = "^[a-fA-F0-9.:]+$"
+        return ip.range(of: pattern, options: .regularExpression) != nil
+    }
+
     private nonisolated static func readProcessMemory() -> String? {
         let process = Process()
         let pipe = Pipe()
@@ -167,6 +173,9 @@ final class RobloxLogWatcher: ObservableObject {
               !pid.isEmpty else {
             return nil
         }
+
+        // 🛡️ Sentinel: Validate PID is strictly numeric to prevent argument injection
+        guard pid.range(of: "^[0-9]+$", options: .regularExpression) != nil else { return nil }
 
         let psProcess = Process()
         let psPipe = Pipe()
@@ -327,6 +336,9 @@ final class RobloxLogWatcher: ObservableObject {
     }
 
     private func resolveRegion(ip: String) {
+        // 🛡️ Sentinel: Validate IP to prevent SSRF
+        guard Self.isValidIP(ip) else { return }
+
         Task.detached {
             guard let url = URL(string: "http://ip-api.com/json/\(ip)?fields=country,regionName,city,query,lat,lon") else { return }
             guard let (data, _) = try? await URLSession.shared.data(from: url),
@@ -345,6 +357,9 @@ final class RobloxLogWatcher: ObservableObject {
 
     private nonisolated static func measurePing(ip: String?) -> Int? {
         guard let ip, !ip.isEmpty else { return nil }
+        // 🛡️ Sentinel: Validate IP to prevent argument injection
+        guard isValidIP(ip) else { return nil }
+
         let process = Process()
         let pipe = Pipe()
         process.executableURL = URL(fileURLWithPath: "/sbin/ping")
