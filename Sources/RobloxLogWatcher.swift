@@ -164,7 +164,9 @@ final class RobloxLogWatcher: ObservableObject {
         let pidData = pipe.fileHandleForReading.readDataToEndOfFile()
         guard let pidStr = String(data: pidData, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines),
               let pid = pidStr.components(separatedBy: .newlines).first,
-              !pid.isEmpty else {
+              !pid.isEmpty,
+              // 🛡️ Sentinel: Ensure extracted PID is strictly numeric to prevent argument injection
+              pid.range(of: "^[0-9]+$", options: .regularExpression) != nil else {
             return nil
         }
 
@@ -213,8 +215,11 @@ final class RobloxLogWatcher: ObservableObject {
         if line.contains("UDMUX") || line.contains("udmux") {
             if let range = line.range(of: "(\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3})", options: .regularExpression) {
                 let ip = String(line[range])
-                currentServerIP = ip
-                resolveRegion(ip: ip)
+                // 🛡️ Sentinel: Validate IP against ^[0-9.]+$ to prevent command injection and SSRF
+                if ip.range(of: "^[0-9.]+$", options: .regularExpression) != nil {
+                    currentServerIP = ip
+                    resolveRegion(ip: ip)
+                }
             }
         }
 
@@ -344,7 +349,9 @@ final class RobloxLogWatcher: ObservableObject {
     }
 
     private nonisolated static func measurePing(ip: String?) -> Int? {
-        guard let ip, !ip.isEmpty else { return nil }
+        guard let ip, !ip.isEmpty,
+              // 🛡️ Sentinel: Validate IP matches expected pattern before passing to Process()
+              ip.range(of: "^[0-9.]+$", options: .regularExpression) != nil else { return nil }
         let process = Process()
         let pipe = Pipe()
         process.executableURL = URL(fileURLWithPath: "/sbin/ping")
