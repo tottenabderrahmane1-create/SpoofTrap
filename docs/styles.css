@@ -3506,13 +3506,19 @@ img {
 }
 
 .first-run-steps li {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr;
   gap: 12px;
   align-items: center;
-  padding: 12px;
+  padding: 14px 14px;
   border-radius: var(--radius-sm);
   background: var(--surface-2);
   border: 1px solid var(--border-subtle);
+}
+
+.first-run-steps li > div {
+  align-self: center;
+  min-width: 0;
 }
 
 .first-run-num {
