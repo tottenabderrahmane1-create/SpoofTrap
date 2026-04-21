@@ -47,7 +47,7 @@
       href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css?v=20260420a" />
+    <link rel="stylesheet" href="./styles.css?v=20260421b" />
   </head>
   <body>
     <div class="page-shell">
@@ -203,132 +203,332 @@
           </div>
         </section>
 
-        <section class="content-section download-section" id="download">
+        <section class="content-section how-it-works" id="how-it-works">
           <div class="section-heading reveal">
-            <span class="section-tag">download</span>
-            <h2>Download for macOS.</h2>
+            <span class="section-tag">how it works</span>
+            <h2>What happens when you hit Launch.</h2>
             <div class="section-rule"></div>
           </div>
 
-          <div class="download-panel glass-panel reveal">
-            <div class="download-summary">
-              <span class="download-label">current release</span>
-              <strong id="version-label">v1.7.2</strong>
-              <p id="generated-at">Bundled spoofdpi in every download — signed DMG, ZIP, PKG.</p>
-              <div class="download-platforms" aria-label="Platform status">
-                <div class="download-platform-chip download-platform-chip-live">
-                  <span class="download-platform-icon">
+          <article class="hiw-card glass-panel reveal">
+            <div class="hiw-titlebar">
+              <div class="hiw-traffic" aria-hidden="true">
+                <span></span><span></span><span></span>
+              </div>
+              <span class="hiw-titlebar-label">spooftrap · launch session</span>
+              <span class="hiw-titlebar-meta">zsh — 80×24</span>
+            </div>
+
+            <div class="hiw-grid">
+              <div class="hiw-terminal" aria-label="Simulated launch session">
+                <div class="hiw-terminal-inner" id="hiw-terminal" aria-live="polite"></div>
+              </div>
+
+              <ol class="hiw-flow" id="hiw-flow" aria-label="Launch flow timeline">
+                <li class="hiw-row" data-step="0">
+                  <span class="hiw-time">00:00.00</span>
+                  <div class="hiw-row-body">
+                    <strong>Choose Roblox.app</strong>
+                    <span>one-time setup</span>
+                  </div>
+                </li>
+                <li class="hiw-row" data-step="1">
+                  <span class="hiw-time">00:00.12</span>
+                  <div class="hiw-row-body">
+                    <strong>Spawn spoofdpi</strong>
+                    <span>bundled, local</span>
+                  </div>
+                </li>
+                <li class="hiw-row" data-step="2">
+                  <span class="hiw-time">00:00.28</span>
+                  <div class="hiw-row-body">
+                    <strong>DPI bypass engages</strong>
+                    <span>fragment + ttl</span>
+                  </div>
+                </li>
+                <li class="hiw-row" data-step="3">
+                  <span class="hiw-time">00:00.51</span>
+                  <div class="hiw-row-body">
+                    <strong>Open Roblox</strong>
+                    <span>hybrid relaunch</span>
+                  </div>
+                </li>
+                <li class="hiw-row" data-step="4">
+                  <span class="hiw-time">00:00.72</span>
+                  <div class="hiw-row-body">
+                    <strong>Session live</strong>
+                    <span>240 fps · 18 ms</span>
+                  </div>
+                </li>
+              </ol>
+            </div>
+          </article>
+        </section>
+
+        <section class="content-section download-section" id="download">
+          <div class="section-heading reveal">
+            <span class="section-tag">download</span>
+            <h2>Download SpoofTrap.</h2>
+            <div class="section-rule"></div>
+          </div>
+
+          <div class="download-layout reveal">
+            <article class="download-card-v2 glass-panel" id="download-card">
+              <div class="download-tabs" role="tablist" aria-label="Platform">
+                <button
+                  type="button"
+                  role="tab"
+                  class="download-tab is-active"
+                  data-tab="macos"
+                  id="tab-macos"
+                  aria-selected="true"
+                  aria-controls="panel-macos"
+                >
+                  <span class="download-tab-icon">
                     <img src="./assets/platform-macos.png" alt="" />
                   </span>
-                  <span>macOS available</span>
-                </div>
-                <div class="download-platform-chip download-platform-chip-soon">
-                  <span class="download-platform-icon download-platform-icon-windows" aria-hidden="true">
+                  macOS
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  class="download-tab"
+                  data-tab="windows"
+                  id="tab-windows"
+                  aria-selected="false"
+                  aria-controls="panel-windows"
+                >
+                  <span class="download-tab-icon download-tab-icon-windows" aria-hidden="true">
                     <span class="windows-glyph">
-                      <span></span>
-                      <span></span>
-                      <span></span>
-                      <span></span>
+                      <span></span><span></span><span></span><span></span>
                     </span>
                   </span>
-                  <span>Windows public beta</span>
-                </div>
+                  Windows
+                  <span class="download-tab-chip">Beta</span>
+                </button>
               </div>
-            </div>
 
-            <div class="download-grid">
-              <a
-                class="download-card is-recommended"
-                id="dmg-link"
-                href="./dist/SpoofTrap.dmg"
-                download
+              <div
+                role="tabpanel"
+                id="panel-macos"
+                aria-labelledby="tab-macos"
+                class="download-panel-v2 is-active"
+                data-tab-panel="macos"
               >
-                <span class="card-tag">recommended</span>
-                <h3>DMG Release</h3>
-                <p>The cleanest install for most people. Download, open, and launch.</p>
-                <span class="download-cta">Download DMG</span>
-                <strong id="dmg-file">SpoofTrap.dmg</strong>
-              </a>
-
-              <article class="download-card download-card-alt-builds" aria-label="Additional macOS builds">
-                <span class="card-tag">other builds</span>
-                <h3>Need another format?</h3>
-                <p>Use PKG for the installer flow or ZIP for the raw packaged folder.</p>
-                <div class="download-secondary-actions">
-                  <a
-                    class="download-secondary-link"
-                    id="pkg-link"
-                    href="./dist/SpoofTrap.pkg"
-                    download
-                  >
-                    <span class="download-secondary-label">PKG</span>
-                    <strong id="pkg-file">SpoofTrap.pkg</strong>
-                  </a>
-                  <a
-                    class="download-secondary-link"
-                    id="zip-link"
-                    href="./dist/SpoofTrap.zip"
-                    download
-                  >
-                    <span class="download-secondary-label">ZIP</span>
-                    <strong id="zip-file">SpoofTrap.zip</strong>
+                <div class="download-lead">
+                  <div class="download-lead-copy">
+                    <span class="download-lead-label">current release</span>
+                    <strong id="version-label">v1.7.2</strong>
+                    <p id="generated-at">Bundled spoofdpi in every macOS artifact.</p>
+                  </div>
+                  <a class="button button-primary download-lead-cta" id="dmg-link" href="./dist/SpoofTrap.dmg" download>
+                    Download DMG
                   </a>
                 </div>
-              </article>
-              <article class="download-card coming-soon-card" aria-label="Windows public beta">
-                <div class="coming-soon-head">
-                  <div class="coming-soon-intro">
-                    <span class="coming-soon-logo-wrap coming-soon-logo-wrap-windows" aria-hidden="true">
-                      <span class="windows-glyph">
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                        <span></span>
-                      </span>
-                    </span>
-                    <div class="coming-soon-copy">
-                      <span class="card-tag">public beta</span>
-                      <h3>Windows</h3>
+
+                <div class="download-formats">
+                  <a class="format-card is-recommended" href="./dist/SpoofTrap.dmg" download data-format="dmg">
+                    <div class="format-head">
+                      <span class="format-badge">DMG</span>
+                      <span class="format-pill">recommended</span>
                     </div>
-                  </div>
-                  <div class="coming-soon-meta">
-                    <a class="download-cta" href="./windows.html">Read warning</a>
-                    <strong>Download with care</strong>
-                  </div>
-                </div>
-                <p>Windows is available as a public beta. It is not polished, may contain bugs or breakage, and is provided AS IS. Read the beta warning first, then download it or check Discord for notes.</p>
-              </article>
-            </div>
+                    <strong class="format-filename" id="dmg-file">SpoofTrap.dmg</strong>
+                    <p>The cleanest install. Open, drag, launch.</p>
+                    <div class="format-foot">
+                      <span class="format-size" id="dmg-size">11.5 MB</span>
+                      <span class="format-cta">Download ↓</span>
+                    </div>
+                  </a>
 
-            <div class="first-run-strip" aria-label="First run steps">
-              <span class="download-label">first run</span>
-              <div class="first-run-flow">
-                <div class="first-run-step">
-                  <span class="first-run-step-number">1</span>
-                  <strong>Download</strong>
+                  <a class="format-card" href="./dist/SpoofTrap.pkg" download data-format="pkg" id="pkg-link">
+                    <div class="format-head">
+                      <span class="format-badge">PKG</span>
+                    </div>
+                    <strong class="format-filename" id="pkg-file">SpoofTrap.pkg</strong>
+                    <p>Installer flow with signed handoff. Good on managed Macs.</p>
+                    <div class="format-foot">
+                      <span class="format-size" id="pkg-size">10.4 MB</span>
+                      <span class="format-cta">Download ↓</span>
+                    </div>
+                  </a>
+
+                  <a class="format-card" href="./dist/SpoofTrap.zip" download data-format="zip" id="zip-link">
+                    <div class="format-head">
+                      <span class="format-badge">ZIP</span>
+                    </div>
+                    <strong class="format-filename" id="zip-file">SpoofTrap.zip</strong>
+                    <p>Raw packaged folder. Unzip and run.</p>
+                    <div class="format-foot">
+                      <span class="format-size" id="zip-size">10.4 MB</span>
+                      <span class="format-cta">Download ↓</span>
+                    </div>
+                  </a>
                 </div>
-                <span class="first-run-arrow" aria-hidden="true">→</span>
-                <div class="first-run-step first-run-step-highlight">
-                  <span class="first-run-step-number">2</span>
-                  <strong>Right-click Open</strong>
-                </div>
-                <span class="first-run-arrow" aria-hidden="true">→</span>
-                <div class="first-run-step">
-                  <span class="first-run-step-number">3</span>
-                  <strong>Choose Roblox.app</strong>
-                </div>
-                <span class="first-run-arrow" aria-hidden="true">→</span>
-                <div class="first-run-step">
-                  <span class="first-run-step-number">4</span>
-                  <strong>Start</strong>
+
+                <div class="first-run-v2" aria-label="First run">
+                  <span class="download-lead-label">first run</span>
+                  <ol class="first-run-steps">
+                    <li>
+                      <span class="first-run-num">1</span>
+                      <div>
+                        <strong>Download</strong>
+                        <span>pick ZIP</span>
+                      </div>
+                    </li>
+                    <li>
+                      <span class="first-run-num">2</span>
+                      <div>
+                        <strong>Unzip</strong>
+                        <span>double-click to extract</span>
+                      </div>
+                    </li>
+                    <li>
+                      <span class="first-run-num">3</span>
+                      <div>
+                        <strong>Open SpoofTrap</strong>
+                        <span>launch from the unzipped folder</span>
+                      </div>
+                    </li>
+                    <li>
+                      <span class="first-run-num">4</span>
+                      <div>
+                        <strong>Start session</strong>
+                        <span>hit Start and play</span>
+                      </div>
+                    </li>
+                  </ol>
                 </div>
               </div>
-            </div>
 
-            <div class="download-footnotes">
-              <p>If macOS warns on first launch, use right-click and Open.</p>
-              <p>Windows is a public beta. Please use it with grace, expect rough edges, and check Discord for warnings and updates.</p>
-            </div>
+              <div
+                role="tabpanel"
+                id="panel-windows"
+                aria-labelledby="tab-windows"
+                class="download-panel-v2"
+                data-tab-panel="windows"
+                hidden
+              >
+                <div class="download-lead download-lead-windows">
+                  <div class="download-lead-copy">
+                    <span class="download-lead-label download-lead-label-warn">public beta</span>
+                    <strong>Windows v1.7.2 beta</strong>
+                    <p>Pre-release software. Rough edges, provided AS IS. Read the warning before you run it.</p>
+                  </div>
+                  <a class="button button-ghost download-lead-cta" href="./windows.html">
+                    Read warning
+                  </a>
+                </div>
+
+                <div class="download-formats">
+                  <a class="format-card format-card-windows" href="https://bit.ly/4bY0AZj" target="_blank" rel="noreferrer" data-format="exe">
+                    <div class="format-head">
+                      <span class="format-badge format-badge-windows">EXE</span>
+                      <span class="format-pill format-pill-beta">beta</span>
+                    </div>
+                    <strong class="format-filename">SpoofTrap-Setup.exe</strong>
+                    <p>One-click installer. Start here if you just want to try it.</p>
+                    <div class="format-foot">
+                      <span class="format-size">~18 MB</span>
+                      <span class="format-cta">Download ↓</span>
+                    </div>
+                  </a>
+
+                  <a class="format-card format-card-windows" href="https://bit.ly/4bY0AZj" target="_blank" rel="noreferrer" data-format="zip-win">
+                    <div class="format-head">
+                      <span class="format-badge format-badge-windows">ZIP</span>
+                      <span class="format-pill">portable</span>
+                    </div>
+                    <strong class="format-filename">SpoofTrap-portable.zip</strong>
+                    <p>No install. Unzip and run from anywhere.</p>
+                    <div class="format-foot">
+                      <span class="format-size">~17 MB</span>
+                      <span class="format-cta">Download ↓</span>
+                    </div>
+                  </a>
+
+                  <a class="format-card format-card-windows" href="https://bit.ly/4bY0AZj" target="_blank" rel="noreferrer" data-format="msi">
+                    <div class="format-head">
+                      <span class="format-badge format-badge-windows">MSI</span>
+                    </div>
+                    <strong class="format-filename">SpoofTrap.msi</strong>
+                    <p>For managed or fleet deploys. Read the warning first.</p>
+                    <div class="format-foot">
+                      <span class="format-size">~19 MB</span>
+                      <span class="format-cta">Download ↓</span>
+                    </div>
+                  </a>
+                </div>
+
+                <p class="windows-disclaimer">
+                  The Windows build is pre-release and provided AS IS. By downloading, you accept the risks of beta software.
+                  <a href="./windows.html">Full warning →</a>
+                </p>
+              </div>
+            </article>
+
+            <aside class="download-rail">
+              <article class="rail-card glass-panel reveal">
+                <span class="rail-label">release timeline</span>
+                <ol class="release-list">
+                  <li class="release-item is-latest">
+                    <span class="release-dot" aria-hidden="true"></span>
+                    <div>
+                      <strong>v1.7.2</strong>
+                      <span class="release-date">2026-04-12</span>
+                      <p>DMG, ZIP, PKG now ship spoofdpi bundled — no separate download.</p>
+                    </div>
+                  </li>
+                  <li class="release-item">
+                    <span class="release-dot" aria-hidden="true"></span>
+                    <div>
+                      <strong>v1.7.1</strong>
+                      <span class="release-date">2026-03-28</span>
+                      <p>Refreshed dist artifacts and download page copy.</p>
+                    </div>
+                  </li>
+                  <li class="release-item">
+                    <span class="release-dot" aria-hidden="true"></span>
+                    <div>
+                      <strong>v1.7.0</strong>
+                      <span class="release-date">2026-03-14</span>
+                      <p>Free vs Pro pricing page and pricing nav across the site.</p>
+                    </div>
+                  </li>
+                  <li class="release-item">
+                    <span class="release-dot" aria-hidden="true"></span>
+                    <div>
+                      <strong>v1.6.5</strong>
+                      <span class="release-date">2026-02-18</span>
+                      <p>7-day offline grace period for license validation.</p>
+                    </div>
+                  </li>
+                </ol>
+              </article>
+
+              <article class="rail-card glass-panel reveal">
+                <span class="rail-label">integrity · sha-256</span>
+                <ul class="integrity-list">
+                  <li class="integrity-row">
+                    <span class="integrity-format">DMG</span>
+                    <code class="integrity-hash" id="dmg-hash-short">—</code>
+                    <button type="button" class="integrity-copy" data-hash-target="dmg-sha" aria-label="Copy DMG sha256">Copy</button>
+                    <span class="integrity-sha-full" id="dmg-sha" hidden></span>
+                  </li>
+                  <li class="integrity-row">
+                    <span class="integrity-format">PKG</span>
+                    <code class="integrity-hash" id="pkg-hash-short">—</code>
+                    <button type="button" class="integrity-copy" data-hash-target="pkg-sha" aria-label="Copy PKG sha256">Copy</button>
+                    <span class="integrity-sha-full" id="pkg-sha" hidden></span>
+                  </li>
+                  <li class="integrity-row">
+                    <span class="integrity-format">ZIP</span>
+                    <code class="integrity-hash" id="zip-hash-short">—</code>
+                    <button type="button" class="integrity-copy" data-hash-target="zip-sha" aria-label="Copy ZIP sha256">Copy</button>
+                    <span class="integrity-sha-full" id="zip-sha" hidden></span>
+                  </li>
+                </ul>
+              </article>
+            </aside>
           </div>
         </section>
       </main>
@@ -363,7 +563,7 @@
       </footer>
     </div>
 
-    <script src="./script.js?v=20260420a"></script>
-    <script src="./animations.js?v=20260420a" defer></script>
+    <script src="./script.js?v=20260421b"></script>
+    <script src="./animations.js?v=20260421b" defer></script>
   </body>
 </html>
