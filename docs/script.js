@@ -300,9 +300,69 @@ if (document.readyState === "loading") {
   boot();
 }
 
+// ---------------------------------------------------------------------
+// Showreel: duplicate items so the marquee loops seamlessly
+// and upgrade each media slot if a real file exists at the expected path
+// ---------------------------------------------------------------------
+async function initShowreel() {
+  const track = document.querySelector(".wt-showreel-track");
+  if (!track) return;
+
+  const items = Array.from(track.querySelectorAll("[data-showreel-item]"));
+
+  await Promise.all(
+    items.map(async (item) => {
+      const slot = item.querySelector("[data-media-slot]");
+      if (!slot) return;
+      const basePath = slot.dataset.mediaSlot;
+      const candidates = [
+        { src: `./assets/${basePath}.mp4`, type: "video" },
+        { src: `./assets/${basePath}.webm`, type: "video" },
+        { src: `./assets/${basePath}.png`, type: "image" },
+        { src: `./assets/${basePath}.jpg`, type: "image" },
+      ];
+      for (const candidate of candidates) {
+        try {
+          const res = await fetch(candidate.src, { method: "HEAD" });
+          if (!res.ok) continue;
+          slot.innerHTML = "";
+          if (candidate.type === "video") {
+            const v = document.createElement("video");
+            v.autoplay = true;
+            v.loop = true;
+            v.muted = true;
+            v.playsInline = true;
+            v.preload = "metadata";
+            v.setAttribute("muted", "");
+            v.setAttribute("playsinline", "");
+            const source = document.createElement("source");
+            source.src = candidate.src;
+            source.type = candidate.src.endsWith(".mp4") ? "video/mp4" : "video/webm";
+            v.appendChild(source);
+            slot.appendChild(v);
+          } else {
+            const img = document.createElement("img");
+            img.src = candidate.src;
+            img.alt = "";
+            img.loading = "lazy";
+            slot.appendChild(img);
+          }
+          return;
+        } catch {
+          // try next candidate
+        }
+      }
+    })
+  );
+
+  // Duplicate the track so the marquee loops seamlessly
+  items.forEach((item) => track.appendChild(item.cloneNode(true)));
+}
+
 function boot() {
   initDownloadTabs();
   initIntegrityCopy();
   initHiwTerminal();
   initHiwFlow();
+  initShowreel();
 }
