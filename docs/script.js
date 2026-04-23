@@ -381,10 +381,21 @@ async function initShowreel() {
   items.forEach((item) => track.appendChild(item.cloneNode(true)));
 }
 
+function initScrollCue() {
+  const cue = document.getElementById("scroll-cue");
+  if (!cue) return;
+  const onScroll = () => {
+    cue.classList.toggle("is-hidden", window.scrollY > 120);
+  };
+  onScroll();
+  window.addEventListener("scroll", onScroll, { passive: true });
+}
+
 function boot() {
   initDownloadTabs();
   initIntegrityCopy();
   initHiwTerminal();
   initHiwFlow();
   initShowreel();
+  initScrollCue();
 }
