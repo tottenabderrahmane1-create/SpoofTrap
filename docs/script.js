@@ -340,6 +340,14 @@ async function initShowreel() {
             source.type = candidate.src.endsWith(".mp4") ? "video/mp4" : "video/webm";
             v.appendChild(source);
             slot.appendChild(v);
+            // Cut every clip at 5s so mismatched source lengths loop predictably
+            const CUT_AT = 5;
+            v.addEventListener("timeupdate", () => {
+              if (v.currentTime >= CUT_AT) {
+                v.currentTime = 0;
+                v.play().catch(() => {});
+              }
+            });
           } else {
             const img = document.createElement("img");
             img.src = candidate.src;
