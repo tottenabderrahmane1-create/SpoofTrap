@@ -1,0 +1,4 @@
+## 2024-05-24 - Command Injection via `sh -c` string interpolation
+**Vulnerability:** A command injection vulnerability existed in `UpdateChecker.swift` where the application path was being interpolated directly into a `/bin/sh -c` string argument (`task.arguments = ["-c", "sleep 1 && open \"\(appPath)\""]`). If `appPath` were somewhat malicious, or just had double quotes and spaces, it could execute arbitrary code.
+**Learning:** Even internal variables like `Bundle.main.bundleURL.path` can contain special characters (spaces, quotes) that break shell commands when interpolated. Using string interpolation to build shell commands is an inherent command injection risk.
+**Prevention:** Always pass user-controlled or path variables as separate arguments to the shell command using `$1`, `$2`, etc. and then passing the variable values as separate elements in the `arguments` array (e.g. `task.arguments = ["-c", "sleep 1 && open \"$1\"", "--", appPath]`).
