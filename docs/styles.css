@@ -4692,16 +4692,15 @@ button:focus-visible,
   .wt-showreel-item { scroll-snap-align: start; }
 }
 
-/* Scroll cue — minimalist bouncing prompt, fixed to viewport bottom ------ */
+/* Scroll cue — divider between hero and the rest of the page ----------- */
 .scroll-cue {
-  position: fixed;
-  left: 50%;
-  bottom: 28px;
-  transform: translateX(-50%);
-  display: inline-flex;
+  position: relative;
+  display: flex;
   flex-direction: column;
   align-items: center;
   gap: 10px;
+  width: max-content;
+  margin: 28px auto 8px;
   padding: 4px 8px;
   color: var(--text-tertiary);
   font-family: var(--font-mono);
@@ -4709,7 +4708,7 @@ button:focus-visible,
   letter-spacing: 0.22em;
   text-transform: uppercase;
   text-decoration: none;
-  z-index: 40;
+  z-index: 2;
   opacity: 0.88;
   animation: scrollCueFloat 3.2s ease-in-out infinite;
   transition:
@@ -4768,14 +4767,14 @@ button:focus-visible,
 }
 
 @keyframes scrollCueFloat {
-  0%, 100% { transform: translateX(-50%) translateY(0); }
-  50%      { transform: translateX(-50%) translateY(-5px); }
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-5px); }
 }
 
 .scroll-cue.is-hidden {
   opacity: 0;
   pointer-events: none;
-  transform: translateX(-50%) translateY(14px);
+  transform: translateY(14px);
   animation: none;
 }
 
