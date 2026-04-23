@@ -4569,19 +4569,17 @@ button:focus-visible,
 }
 
 .wt-showreel-item {
-  flex: 0 0 380px;
-  height: 240px;
-  padding: var(--s-5);
+  flex: 0 0 360px;
+  height: 280px;
+  padding: 0;
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
   background:
-    linear-gradient(180deg, rgba(125, 232, 255, 0.05), rgba(125, 232, 255, 0) 50%),
+    linear-gradient(180deg, rgba(125, 232, 255, 0.05), rgba(125, 232, 255, 0) 60%),
     var(--surface-1);
-  position: relative;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
   transition:
     transform var(--dur-base) var(--ease-out),
     border-color var(--dur-base) var(--ease-out),
@@ -4595,6 +4593,8 @@ button:focus-visible,
 }
 
 .wt-showreel-label {
+  display: block;
+  padding: var(--s-4) var(--s-5) 2px;
   font-family: var(--font-mono);
   font-size: var(--fs-micro);
   letter-spacing: 0.14em;
@@ -4603,22 +4603,22 @@ button:focus-visible,
 
 .wt-showreel-title {
   display: block;
+  padding: 4px var(--s-5) var(--s-4);
   font-size: var(--fs-title-lg);
   font-weight: 700;
   letter-spacing: -0.02em;
   color: var(--text-primary);
-  max-width: 14ch;
-  line-height: 1.2;
+  line-height: 1.25;
+  max-width: 22ch;
 }
 
 .wt-showreel-media {
-  position: absolute;
-  inset: auto 0 0 0;
-  height: 56%;
+  position: relative;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
-  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
   background:
-    linear-gradient(135deg, rgba(125, 232, 255, 0.1), rgba(73, 158, 255, 0.04) 60%),
+    linear-gradient(135deg, rgba(125, 232, 255, 0.12), rgba(73, 158, 255, 0.04) 60%),
     var(--surface-2);
   border-top: 1px solid var(--border-subtle);
 }
@@ -4633,27 +4633,31 @@ button:focus-visible,
 
 .wt-media-fallback {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 8px;
   height: 100%;
+  padding: var(--s-3);
   color: var(--text-quaternary);
   font-family: var(--font-mono);
-  font-size: var(--fs-micro);
+  font-size: 0.66rem;
   letter-spacing: 0.04em;
+  text-align: center;
 }
 
 .wt-media-fallback svg {
-  width: 28px;
-  height: 28px;
-  opacity: 0.6;
+  width: 22px;
+  height: 22px;
+  opacity: 0.4;
 }
 
 .wt-media-fallback code {
-  color: var(--accent);
-  background: rgba(125, 232, 255, 0.08);
+  color: rgba(125, 232, 255, 0.55);
+  background: rgba(125, 232, 255, 0.05);
   padding: 2px 6px;
   border-radius: 4px;
+  font-size: 0.64rem;
 }
 
 @keyframes showreelScroll {
@@ -4662,7 +4666,8 @@ button:focus-visible,
 }
 
 @media (max-width: 640px) {
-  .wt-showreel-item { flex-basis: 280px; height: 200px; }
+  .wt-showreel-item { flex-basis: 260px; height: 220px; }
+  .wt-showreel-title { font-size: 1.04rem; }
 }
 
 /* Reduced motion guards */
