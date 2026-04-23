@@ -1,0 +1,4 @@
+## 2024-05-15 - Unsanitized Log Parsing Values used in System and Network Calls
+**Vulnerability:** Extracted inputs (`ip`, `placeId`, `pid`) from external application log files (Roblox) were passed directly into URL paths (SSRF) and `Process` arguments (Command/Argument Injection) without any structural validation.
+**Learning:** Data from local files must be treated as untrusted user input, especially if the file contents can be manipulated by an external entity or application. Always assume log parsing results could contain malicious payloads if the regex capture groups are too permissive.
+**Prevention:** Strictly validate extracted inputs using bounded regexes (e.g., `^[0-9]+$` for PIDs and IDs, `^[a-fA-F0-9.:]+$` for IPs) before incorporating them into sensitive contexts like system commands or network requests.
