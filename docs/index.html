@@ -47,7 +47,7 @@
       href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Manrope:wght@400;500;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="./styles.css?v=20260421d" />
+    <link rel="stylesheet" href="./styles.css?v=20260423a" />
   </head>
   <body>
     <div class="page-shell">
@@ -85,16 +85,16 @@
       <main id="top">
         <section class="hero" id="promo">
           <div class="hero-copy glass-panel">
-            <div class="hero-status">
-              <span class="dot"></span>
-              <span>v1.7.2 stable</span>
-              <span class="sep">·</span>
-              <span>macOS 13+</span>
-              <span class="sep">·</span>
-              <span>bundled spoofdpi</span>
+            <div class="hero-status hero-status-refined" role="status" aria-label="Release status">
+              <span class="hero-status-left">
+                <span class="hero-status-dot" aria-hidden="true"></span>
+                <span class="hero-status-version">v1.7.2 stable</span>
+              </span>
+              <span class="hero-status-sep" aria-hidden="true"></span>
+              <span class="hero-status-meta">macOS 13+ · Apple Silicon</span>
             </div>
-            <span class="eyebrow">macos launcher</span>
-            <h1>
+            <span class="eyebrow">macos launcher · network layer</span>
+            <h1 class="hero-headline">
               Launch Roblox on<br />
               <span class="word-rotator" aria-label="restricted networks">
                 <span class="word" aria-hidden="true">school WiFi</span>
@@ -103,27 +103,38 @@
                 <span class="word" aria-hidden="true">blocked WiFi</span>
               </span>
             </h1>
-            <p class="hero-text">
-              A macOS Roblox launcher made for restrictive networks, cleaner
-              setup, and faster recovery when the usual launch path fails.
+            <p class="hero-text hero-text-refined">
+              A macOS Roblox launcher made for restrictive networks. Cleaner
+              setup, faster recovery, and a calmer path through DPI when the
+              usual route fails.
             </p>
 
-            <div class="hero-meta" aria-label="Highlights">
-              <span>open source</span>
-              <span>code-signed</span>
-              <span>free forever</span>
+            <div class="hero-meta hero-meta-refined" aria-label="Highlights">
+              <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/></svg>open source</span>
+              <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>code-signed</span>
+              <span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/></svg>free forever</span>
             </div>
 
             <div class="hero-actions">
-              <a class="button button-primary" href="#download">Download for macOS</a>
+              <a class="button button-primary button-refined" href="#download">
+                <span>Download for macOS</span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 4v12m0 0l-5-5m5 5l5-5"/><path d="M4 20h16"/></svg>
+              </a>
               <a
-                class="button button-secondary"
+                class="button button-secondary button-refined"
                 href="https://github.com/spooftrap-app/SpoofTrap"
                 target="_blank"
                 rel="noreferrer"
               >
-                View source
+                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 .5C5.73.5.75 5.48.75 11.75c0 4.88 3.16 9 7.55 10.46.55.1.75-.24.75-.53 0-.26-.01-.95-.02-1.87-3.07.67-3.72-1.48-3.72-1.48-.5-1.28-1.23-1.62-1.23-1.62-1-.69.08-.67.08-.67 1.11.08 1.69 1.14 1.69 1.14.98 1.68 2.58 1.2 3.21.92.1-.71.39-1.2.71-1.48-2.45-.28-5.03-1.23-5.03-5.47 0-1.21.43-2.2 1.13-2.97-.11-.28-.49-1.4.11-2.92 0 0 .92-.3 3.03 1.13a10.5 10.5 0 015.52 0c2.1-1.43 3.02-1.13 3.02-1.13.6 1.52.22 2.64.11 2.92.7.77 1.13 1.76 1.13 2.97 0 4.25-2.58 5.19-5.04 5.46.4.34.75 1.01.75 2.04 0 1.47-.01 2.65-.01 3.01 0 .29.2.64.76.53 4.38-1.46 7.54-5.58 7.54-10.46C23.25 5.48 18.27.5 12 .5z"/></svg>
+                <span>View source</span>
               </a>
+            </div>
+
+            <div class="hero-credit" aria-label="Author credit">
+              <span class="hero-credit-label">built by</span>
+              <strong>@inqweqwe</strong>
+              <span class="hero-credit-meta">student in Qatar where Roblox is blocked</span>
             </div>
           </div>
 
@@ -156,6 +167,31 @@
           </div>
         </section>
 
+        <section class="stats-band reveal" aria-label="Key stats">
+          <div class="stats-band-inner">
+            <div class="stat-cell">
+              <span class="stat-label">// current stable</span>
+              <strong class="stat-value">v1.7.2</strong>
+              <span class="stat-hint">signed, notarized</span>
+            </div>
+            <div class="stat-cell">
+              <span class="stat-label">// bundle size</span>
+              <strong class="stat-value">11.5 MB</strong>
+              <span class="stat-hint">DMG with spoofdpi</span>
+            </div>
+            <div class="stat-cell">
+              <span class="stat-label">// min os</span>
+              <strong class="stat-value">macOS 13+</strong>
+              <span class="stat-hint">Intel &amp; Apple Silicon</span>
+            </div>
+            <div class="stat-cell">
+              <span class="stat-label">// license</span>
+              <strong class="stat-value">Free · MIT</strong>
+              <span class="stat-hint">source on GitHub</span>
+            </div>
+          </div>
+        </section>
+
         <section class="content-section" id="features">
           <div class="section-heading reveal">
             <span class="section-tag">features</span>
@@ -163,42 +199,69 @@
             <div class="section-rule"></div>
           </div>
 
-          <div class="feature-grid">
-            <article class="feature-card glass-panel reveal">
+          <div class="feature-grid feature-grid-refined">
+            <article class="feature-card feature-card-refined glass-panel reveal">
+              <span class="feature-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 2l8 4v6c0 5-3.5 8.5-8 10-4.5-1.5-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/></svg>
+              </span>
               <h3>Restricted-ready</h3>
-              <p>Made for school, office, and shared networks that block normal access.</p>
+              <p>Built for school, office, and shared networks that block the usual launch path.</p>
             </article>
-            <article class="feature-card glass-panel reveal">
+            <article class="feature-card feature-card-refined glass-panel reveal">
+              <span class="feature-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v3"/><path d="M3 12h3"/><path d="M18 12h3"/><path d="M5.6 5.6l2.1 2.1"/><path d="M16.3 7.7l2.1-2.1"/><path d="M4 20h16"/><path d="M7 20a5 5 0 0110 0"/><path d="M12 13l3-4"/></svg>
+              </span>
               <h3>FPS Unlocker</h3>
-              <p>Remove the 60fps cap with a single toggle. Free: 120fps. Pro: 144, 240, or unlimited.</p>
+              <p>Lift the 60 fps cap in one click. Free hits 120 fps; Pro goes 144, 240, or unlimited.</p>
             </article>
-            <article class="feature-card glass-panel reveal">
+            <article class="feature-card feature-card-refined glass-panel reveal">
+              <span class="feature-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 5h16v10H8l-4 4V5z"/><circle cx="9" cy="10" r="1" fill="currentColor"/><circle cx="13" cy="10" r="1" fill="currentColor"/><circle cx="17" cy="10" r="1" fill="currentColor"/></svg>
+              </span>
               <h3>Discord Rich Presence</h3>
-              <p>Show what you're playing on your Discord profile with game name, time, and join button.</p>
+              <p>Show what you're playing on your profile — game name, time in session, join button.</p>
             </article>
-            <article class="feature-card glass-panel reveal">
+            <article class="feature-card feature-card-refined glass-panel reveal">
+              <span class="feature-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M13 2L4 14h7l-1 8 9-12h-7l1-8z"/></svg>
+              </span>
               <h3>Quick Launch &amp; Favorites</h3>
-              <p>Pin your favorite games for one-click launching via deep links — skip the Roblox app.</p>
+              <p>Pin games for one-click launching via deep links — skip the Roblox app entirely.</p>
             </article>
-            <article class="feature-card glass-panel reveal">
+            <article class="feature-card feature-card-refined glass-panel reveal">
+              <span class="feature-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3a14 14 0 010 18"/><path d="M12 3a14 14 0 000 18"/></svg>
+              </span>
               <h3>Server Region Display</h3>
-              <p>See which datacenter you're connected to in real time with GeoIP lookup.</p>
+              <p>See which datacenter you're on in real time with GeoIP lookup and latency.</p>
             </article>
-            <article class="feature-card glass-panel reveal">
+            <article class="feature-card feature-card-refined glass-panel reveal">
+              <span class="feature-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+              </span>
               <h3>Auto-Rejoin</h3>
-              <p>Disconnected? SpoofTrap detects it and rejoins the same server automatically.</p>
+              <p>Disconnected mid-match? SpoofTrap detects it and rejoins the same server automatically.</p>
             </article>
-            <article class="feature-card glass-panel reveal">
+            <article class="feature-card feature-card-refined glass-panel reveal">
+              <span class="feature-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M7 7h10v12H7z"/><path d="M10 4h10v12"/></svg>
+              </span>
               <h3>File Replacement Mods</h3>
               <p>Swap death sounds, cursors, fonts, app icon, and avatar backgrounds — Bloxstrap-style.</p>
             </article>
-            <article class="feature-card glass-panel reveal">
+            <article class="feature-card feature-card-refined glass-panel reveal">
+              <span class="feature-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M5 3v18"/><path d="M5 4h13l-3 4 3 4H5"/></svg>
+              </span>
               <h3>FastFlags &amp; Presets</h3>
               <p>Curated flag presets plus a full editor for fine-tuning Roblox rendering and behavior.</p>
             </article>
-            <article class="feature-card glass-panel reveal">
+            <article class="feature-card feature-card-refined glass-panel reveal">
+              <span class="feature-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="8" height="8" rx="1"/><rect x="13" y="3" width="8" height="8" rx="1"/><rect x="3" y="13" width="8" height="8" rx="1"/><rect x="13" y="13" width="8" height="8" rx="1"/></svg>
+              </span>
               <h3>Multi-Instance</h3>
-              <p>Run multiple Roblox windows at once for alt accounts or testing. Pro only.</p>
+              <p>Run multiple Roblox windows at once — alts, testing, regional hopping. Pro only.</p>
             </article>
           </div>
         </section>
@@ -565,6 +628,76 @@
             </aside>
           </div>
         </section>
+
+        <section class="content-section faq-section" id="faq">
+          <div class="section-heading reveal">
+            <span class="section-tag">faq</span>
+            <h2>Common questions.</h2>
+            <div class="section-rule"></div>
+          </div>
+
+          <div class="faq-grid-refined">
+            <details class="faq-detail glass-panel reveal" open>
+              <summary>
+                <span>Is this a hack or bypass for Roblox?</span>
+                <span class="faq-chevron" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                </span>
+              </summary>
+              <p>No. SpoofTrap doesn't modify Roblox or the account. It wraps the usual launch path with a local DPI-bypass layer so restrictive networks don't block the connection.</p>
+            </details>
+
+            <details class="faq-detail glass-panel reveal">
+              <summary>
+                <span>Why does it need DPI bypass?</span>
+                <span class="faq-chevron" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                </span>
+              </summary>
+              <p>Schools, dorms, and corporate networks often inspect TLS traffic and block Roblox at the handshake. SpoofTrap ships a bundled spoofdpi binary to fragment and shift the TLS so the handshake completes.</p>
+            </details>
+
+            <details class="faq-detail glass-panel reveal">
+              <summary>
+                <span>Is it signed? Will Gatekeeper block it?</span>
+                <span class="faq-chevron" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                </span>
+              </summary>
+              <p>Yes — DMG, PKG, and ZIP are code-signed and notarized by Apple. If macOS still warns on first launch, right-click and choose Open.</p>
+            </details>
+
+            <details class="faq-detail glass-panel reveal">
+              <summary>
+                <span>What does Pro unlock?</span>
+                <span class="faq-chevron" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                </span>
+              </summary>
+              <p>Higher FPS caps (144, 240, unlimited), multi-instance, custom FastFlag entries, and extra presets. Keys are issued by hand in the Discord — no subscription, no checkout. <a href="./pricing.html">Full pricing →</a></p>
+            </details>
+
+            <details class="faq-detail glass-panel reveal">
+              <summary>
+                <span>Does it collect any data?</span>
+                <span class="faq-chevron" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                </span>
+              </summary>
+              <p>No telemetry, no analytics. Pro license validation hits Supabase; everything else runs locally. The source is on GitHub.</p>
+            </details>
+
+            <details class="faq-detail glass-panel reveal">
+              <summary>
+                <span>What about Windows?</span>
+                <span class="faq-chevron" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 9l6 6 6-6"/></svg>
+                </span>
+              </summary>
+              <p>Windows is in public beta. Rough around the edges, provided as-is. Read the warning before installing. <a href="./windows.html">Windows page →</a></p>
+            </details>
+          </div>
+        </section>
       </main>
 
       <footer class="site-footer">
@@ -597,7 +730,7 @@
       </footer>
     </div>
 
-    <script src="./script.js?v=20260421b"></script>
-    <script src="./animations.js?v=20260421b" defer></script>
+    <script src="./script.js?v=20260423a"></script>
+    <script src="./animations.js?v=20260423a" defer></script>
   </body>
 </html>
