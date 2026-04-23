@@ -310,17 +310,30 @@ async function initShowreel() {
 
   const items = Array.from(track.querySelectorAll("[data-showreel-item]"));
 
+  // Mobile and reduced-motion users get a static poster — no video fetched,
+  // no autoplay, no CPU cost. Threshold matches the CSS small-screen rule.
+  const isSmall = window.matchMedia("(max-width: 760px)").matches;
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const staticOnly = isSmall || reduceMotion;
+
   await Promise.all(
     items.map(async (item) => {
       const slot = item.querySelector("[data-media-slot]");
       if (!slot) return;
       const basePath = slot.dataset.mediaSlot;
-      const candidates = [
-        { src: `./assets/${basePath}.mp4`, type: "video" },
-        { src: `./assets/${basePath}.webm`, type: "video" },
-        { src: `./assets/${basePath}.png`, type: "image" },
-        { src: `./assets/${basePath}.jpg`, type: "image" },
-      ];
+      const candidates = staticOnly
+        ? [
+            { src: `./assets/${basePath}.jpg`, type: "image" },
+            { src: `./assets/${basePath}.png`, type: "image" },
+            { src: `./assets/${basePath}.mp4`, type: "video" },
+            { src: `./assets/${basePath}.webm`, type: "video" },
+          ]
+        : [
+            { src: `./assets/${basePath}.mp4`, type: "video" },
+            { src: `./assets/${basePath}.webm`, type: "video" },
+            { src: `./assets/${basePath}.png`, type: "image" },
+            { src: `./assets/${basePath}.jpg`, type: "image" },
+          ];
       for (const candidate of candidates) {
         try {
           const res = await fetch(candidate.src, { method: "HEAD" });
@@ -333,6 +346,7 @@ async function initShowreel() {
             v.muted = true;
             v.playsInline = true;
             v.preload = "metadata";
+            v.poster = `./assets/${basePath}.jpg`;
             v.setAttribute("muted", "");
             v.setAttribute("playsinline", "");
             const source = document.createElement("source");
