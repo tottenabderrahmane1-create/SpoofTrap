@@ -1,0 +1,4 @@
+## 2024-03-21 - Unvalidated Input Passed to System Processes and Network Requests
+**Vulnerability:** Input extracted from log files (like IPs and place IDs) was being directly interpolated into URLs for network requests (SSRF risk) and process arguments for system commands like `/sbin/ping` (command injection risk) without validation.
+**Learning:** Even if data originates from a "local" file like an application log, if the application controls the log contents (e.g., game titles, usernames, connected IPs), it can still be manipulated by malicious actors to inject arbitrary commands or trigger unauthorized network requests. Data from log files must be treated as untrusted input.
+**Prevention:** Always validate extracted log data against strict regular expressions (e.g., `^[a-fA-F0-9.:]+$` for IPs, `^[0-9]+$` for IDs) before using them in sensitive operations like `Process()` arguments or `URL()` initializations.
