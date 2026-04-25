@@ -168,6 +168,11 @@ final class RobloxLogWatcher: ObservableObject {
             return nil
         }
 
+        // 🛡️ Sentinel: Validate PID to prevent argument injection
+        guard pid.range(of: "^[0-9]+$", options: .regularExpression) != nil else {
+            return nil
+        }
+
         let psProcess = Process()
         let psPipe = Pipe()
         psProcess.executableURL = URL(fileURLWithPath: "/bin/ps")
@@ -345,6 +350,10 @@ final class RobloxLogWatcher: ObservableObject {
 
     private nonisolated static func measurePing(ip: String?) -> Int? {
         guard let ip, !ip.isEmpty else { return nil }
+
+        // 🛡️ Sentinel: Validate IP to prevent argument injection
+        guard ip.range(of: "^[a-fA-F0-9.:]+$", options: .regularExpression) != nil else { return nil }
+
         let process = Process()
         let pipe = Pipe()
         process.executableURL = URL(fileURLWithPath: "/sbin/ping")
