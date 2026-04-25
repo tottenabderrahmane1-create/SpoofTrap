@@ -1,0 +1,4 @@
+## 2024-04-25 - Shell Command Injection via Process Interpolation
+**Vulnerability:** A `Process()` execution invoking `/bin/sh -c` used direct string interpolation to construct the shell command (`"sleep 1 && open \"\(appPath)\""`). If an attacker controlled the `appPath` (e.g., by tricking the application into renaming itself or using a manipulated payload during an update), they could inject arbitrary shell commands.
+**Learning:** Even simple restart logic can become a critical vulnerability if paths are interpolated into a shell interpreter string rather than passed as separate elements or executed via safer native APIs.
+**Prevention:** Avoid `/bin/sh -c` whenever possible. Use higher-level APIs like `NSWorkspace.shared.openApplication` for launching/restarting apps. When `Process()` is strictly necessary, never use shell interpolation; always execute the specific binary directly and pass untrusted inputs as isolated items in the `arguments` array.
