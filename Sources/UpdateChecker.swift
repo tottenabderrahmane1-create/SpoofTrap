@@ -152,12 +152,14 @@ final class UpdateChecker: ObservableObject {
     }
 
     private func relaunchApp() {
-        let appPath = Bundle.main.bundleURL.path
-        let task = Process()
-        task.executableURL = URL(fileURLWithPath: "/bin/sh")
-        task.arguments = ["-c", "sleep 1 && open \"\(appPath)\""]
-        try? task.run()
-        NSApplication.shared.terminate(nil)
+        // 🛡️ Sentinel: Prevent command injection vulnerability by using native macOS APIs instead of /bin/sh
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.createsNewApplicationInstance = true
+        NSWorkspace.shared.openApplication(at: Bundle.main.bundleURL, configuration: configuration) { _, _ in
+            Task { @MainActor in
+                NSApplication.shared.terminate(nil)
+            }
+        }
     }
 
     private func isNewer(remote: String, current: String) -> Bool {
