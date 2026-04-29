@@ -1,0 +1,4 @@
+## 2024-04-29 - [Command Injection via String Interpolation in App Relaunch]
+**Vulnerability:** Found a command injection vulnerability where `Bundle.main.bundleURL.path` was being directly interpolated into a `/bin/sh -c` argument string (`"sleep 1 && open \"\(appPath)\""`). If the path contained malicious characters (e.g., quotes or shell metacharacters), it could lead to arbitrary command execution.
+**Learning:** String interpolation in shell commands, especially when involving file paths or user-controlled input, is extremely risky and violates the principle of using parameterized arguments or native APIs.
+**Prevention:** Always use native macOS APIs (e.g., `NSWorkspace.shared.openApplication`) for process and application management instead of relying on shell execution via `/bin/sh` and `Process()`. When `Process()` is absolutely necessary, pass variables as discrete array elements rather than embedding them in command strings.
