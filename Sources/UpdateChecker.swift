@@ -152,10 +152,11 @@ final class UpdateChecker: ObservableObject {
     }
 
     private func relaunchApp() {
+        // 🛡️ Sentinel: Prevent command injection by passing the path as an argument rather than interpolating
         let appPath = Bundle.main.bundleURL.path
         let task = Process()
         task.executableURL = URL(fileURLWithPath: "/bin/sh")
-        task.arguments = ["-c", "sleep 1 && open \"\(appPath)\""]
+        task.arguments = ["-c", "sleep 1 && open \"$0\"", appPath]
         try? task.run()
         NSApplication.shared.terminate(nil)
     }
